@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "590418953408",
+    "project_id": "trafficteststart419",
+    "storage_bucket": "trafficteststart419.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:590418953408:android:9886ab701e6fb33a35d925",
+        "android_client_info": {
+          "package_name": "com.example.traffic"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBhvK52K7MAMpFd1a95y-j0wR97m7-GWpQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:590418953408:android:102440e9c4421f1735d925",
+        "android_client_info": {
+          "package_name": "com.example.traffic"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBhvK52K7MAMpFd1a95y-j0wR97m7-GWpQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
