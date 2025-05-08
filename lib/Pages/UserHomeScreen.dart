@@ -29,6 +29,7 @@ import 'package:traffic/Pages/UserExercise/UserExerciseTwentyTwo.dart';
 import 'package:traffic/Pages/UserExercise/UserExerciseTwelve.dart';
 import 'package:traffic/Pages/SignUpAndLogin/LoginPage.dart';
 import 'package:traffic/Pages/UserExercise/UserExerciseTwo.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 void main() {
   runApp(UserHomeScreenPage());
@@ -354,116 +355,95 @@ void _logoutAndRedirectToLogin(BuildContext context) {
                   ),
                 ),
                 SizedBox(height: 10),
-                ElevatedButton(
+            ElevatedButton(
   onPressed: () async {
-final selectedCount = await showDialog<int>(
-  context: context,
-  builder: (context) => const DynamicQuestionSelectDialog(totalQuestions: 20),
-);
+    try {
+      // Fetch the count of documents from the SmartTrafficInputOneCollection
+      final snapshot = await FirebaseFirestore.instance
+          .collection('SmartTrafficInputOneCollection')
+          .get();
+      final totalQuestions = snapshot.size;  // Get the count of documents
 
-if (selectedCount != null) {
-}
+      // Show the dialog to select the number of questions
+      final selectedCount = await showDialog<int>(
+        context: context,
+        builder: (context) => DynamicQuestionSelectDialog(totalQuestions: totalQuestions), // Pass the totalQuestions
+      );
 
-    if (selectedCount != null) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => UserExerciseOne(
-            questionCount: selectedCount,
+      // If a count is selected, navigate to the next page with the selected number of questions
+      if (selectedCount != null) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => UserExerciseOne(selectedQuestions: selectedCount), // Pass the selected count
           ),
-        ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error fetching total questions: $e')),
       );
     }
   },
-  
   style: ElevatedButton.styleFrom(
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.white, // White background for this button
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(10),
     ),
-    elevation: 2,
+    elevation: 2, // Adds shadow to give a slight raised effect
   ),
   child: Padding(
     padding: const EdgeInsets.all(7),
     child: Row(
       children: [
+        // Icon for the button
         Image.asset('assets/1.png', width: 36, height: 36),
         SizedBox(width: 10),
         Text(
-          "Нэр томьёоны тодорхойлолт-20",
+          "Нэр томьёоны тодорхойлолт",
           style: TextStyle(
-            color: Colors.black,
+            color: Colors.black, // Text color for white button
             fontWeight: FontWeight.bold,
             fontSize: 12,
           ),
         ),
         Spacer(),
+        // Next icon at the end of the button
         Image.asset('assets/next.png', width: 24, height: 24),
       ],
     ),
   ),
 ),
-
 SizedBox(height: 5),
-      ElevatedButton(
-  onPressed: () {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => UserExerciseTwenty(),
-      ),
-    );
-  },
-  style: ElevatedButton.styleFrom(
-    backgroundColor: Colors.white,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(10),
-    ),
-  ),
-  child: Padding(
-    padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 10), // Outer padding
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        // Зургийн орон зай
-        Image.asset('assets/20.webp', width: 36, height: 36),
+        ElevatedButton(
+  onPressed: () async {
+    try {
+      // Fetch the count of documents from the SmartTrafficInputOneCollection
+      final snapshot = await FirebaseFirestore.instance
+          .collection('SmartTrafficInputTwoCollection')
+          .get();
+      final totalQuestions = snapshot.size;  // Get the count of documents
 
-        SizedBox(width: 10),
+      // Show the dialog to select the number of questions
+      final selectedCount = await showDialog<int>(
+        context: context,
+        builder: (context) => DynamicQuestionSelectDialog(totalQuestions: totalQuestions), // Pass the totalQuestions
+      );
 
-        // Текстэнд Expanded + Padding
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4.0),
-            child: Text(
-              "Механикжсан тээврийн хэрэгслийн ангилал-20",
-              style: TextStyle(
-                color: Colors.black,
-                fontWeight: FontWeight.bold,
-                fontSize: 12,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis, // Урт текст таслана
-            ),
+      // If a count is selected, navigate to the next page with the selected number of questions
+      if (selectedCount != null) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => UserExerciseTwo(selectedQuestions: selectedCount), // Pass the selected count
           ),
-        ),
-
-        // Icon
-        Image.asset('assets/next.png', width: 24, height: 24),
-      ],
-    ),
-  ),
-),
-
-SizedBox(height: 8,),
-ElevatedButton(
-  onPressed: () {
-    // Button click navigation
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => UserExerciseThree(), // Admin Quiz Page
-      ),
-    );
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error fetching total questions: $e')),
+      );
+    }
   },
   style: ElevatedButton.styleFrom(
     backgroundColor: Colors.white, // White background for this button
@@ -480,7 +460,7 @@ ElevatedButton(
         Image.asset('assets/3.png', width: 36, height: 36),
         SizedBox(width: 10),
         Text(
-          "Жолоочийн үүрэг",
+          "Механикжсан тээврийн хэрэгслийн ангилал",
           style: TextStyle(
             color: Colors.black, // Text color for white button
             fontWeight: FontWeight.bold,
@@ -493,19 +473,37 @@ ElevatedButton(
       ],
     ),
   ),
-),      
+),
 SizedBox(height: 8,),
-ElevatedButton(
-  onPressed: () {
-    // Button click navigation
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        
-        builder: (context) => UserExerciseFour(), // Admin Quiz Page
-        
-      ),
-    );
+ ElevatedButton(
+  onPressed: () async {
+    try {
+      // Fetch the count of documents from the SmartTrafficInputOneCollection
+      final snapshot = await FirebaseFirestore.instance
+          .collection('SmartTrafficInputThreeCollection')
+          .get();
+      final totalQuestions = snapshot.size;  // Get the count of documents
+
+      // Show the dialog to select the number of questions
+      final selectedCount = await showDialog<int>(
+        context: context,
+        builder: (context) => DynamicQuestionSelectDialog(totalQuestions: totalQuestions), // Pass the totalQuestions
+      );
+
+      // If a count is selected, navigate to the next page with the selected number of questions
+      if (selectedCount != null) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => UserExerciseThree(selectedQuestions: selectedCount), // Pass the selected count
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error fetching total questions: $e')),
+      );
+    }
   },
   style: ElevatedButton.styleFrom(
     backgroundColor: Colors.white, // White background for this button
@@ -522,9 +520,7 @@ ElevatedButton(
         Image.asset('assets/4.png', width: 36, height: 36),
         SizedBox(width: 10),
         Text(
-              """Тусгай дуут болон гэрлэн дохио
-ажилуулсан тээврийн хэрэгслийн
-хөдөлгөөн-10""",
+          "Жолоочийн үүрэг",
           style: TextStyle(
             color: Colors.black, // Text color for white button
             fontWeight: FontWeight.bold,
@@ -537,17 +533,37 @@ ElevatedButton(
       ],
     ),
   ),
-),      
+),
 SizedBox(height: 8,),
-ElevatedButton(
-  onPressed: () {
-    // Button click navigation
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => UserExerciseFive(), // Admin Quiz Page
-      ),
-    );
+ ElevatedButton(
+  onPressed: () async {
+    try {
+      // Fetch the count of documents from the SmartTrafficInputOneCollection
+      final snapshot = await FirebaseFirestore.instance
+          .collection('SmartTrafficInputFourCollection')
+          .get();
+      final totalQuestions = snapshot.size;  // Get the count of documents
+
+      // Show the dialog to select the number of questions
+      final selectedCount = await showDialog<int>(
+        context: context,
+        builder: (context) => DynamicQuestionSelectDialog(totalQuestions: totalQuestions), // Pass the totalQuestions
+      );
+
+      // If a count is selected, navigate to the next page with the selected number of questions
+      if (selectedCount != null) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => UserExerciseFour(selectedQuestions: selectedCount), // Pass the selected count
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error fetching total questions: $e')),
+      );
+    }
   },
   style: ElevatedButton.styleFrom(
     backgroundColor: Colors.white, // White background for this button
@@ -564,7 +580,7 @@ ElevatedButton(
         Image.asset('assets/5.png', width: 36, height: 36),
         SizedBox(width: 10),
         Text(
-          "Замын тэмдэг",
+          "усгай дуут болон гэрлэн дохио ажиллулсан тээврийн хэрэгслийн хөдөлгөөн",
           style: TextStyle(
             color: Colors.black, // Text color for white button
             fontWeight: FontWeight.bold,
@@ -577,17 +593,37 @@ ElevatedButton(
       ],
     ),
   ),
-),      
+),
 SizedBox(height: 8,),
-ElevatedButton(
-  onPressed: () {
-    // Button click navigation
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => UserExerciseSix(), // Admin Quiz Page
-      ),
-    );
+ ElevatedButton(
+  onPressed: () async {
+    try {
+      // Fetch the count of documents from the SmartTrafficInputOneCollection
+      final snapshot = await FirebaseFirestore.instance
+          .collection('SmartTrafficInputFiveCollection')
+          .get();
+      final totalQuestions = snapshot.size;  // Get the count of documents
+
+      // Show the dialog to select the number of questions
+      final selectedCount = await showDialog<int>(
+        context: context,
+        builder: (context) => DynamicQuestionSelectDialog(totalQuestions: totalQuestions), // Pass the totalQuestions
+      );
+
+      // If a count is selected, navigate to the next page with the selected number of questions
+      if (selectedCount != null) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => UserExerciseFive(selectedQuestions: selectedCount), // Pass the selected count
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error fetching total questions: $e')),
+      );
+    }
   },
   style: ElevatedButton.styleFrom(
     backgroundColor: Colors.white, // White background for this button
@@ -604,7 +640,7 @@ ElevatedButton(
         Image.asset('assets/6.png', width: 36, height: 36),
         SizedBox(width: 10),
         Text(
-          "Замын тэмдэглэл",
+          "Замын тэмдэг",
           style: TextStyle(
             color: Colors.black, // Text color for white button
             fontWeight: FontWeight.bold,
@@ -617,17 +653,37 @@ ElevatedButton(
       ],
     ),
   ),
-),      
+),
 SizedBox(height: 8,),
-ElevatedButton(
-  onPressed: () {
-    // Button click navigation
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => UserExerciseSeven(), // Admin Quiz Page
-      ),
-    );
+ ElevatedButton(
+  onPressed: () async {
+    try {
+      // Fetch the count of documents from the SmartTrafficInputOneCollection
+      final snapshot = await FirebaseFirestore.instance
+          .collection('SmartTrafficInputSixCollection')
+          .get();
+      final totalQuestions = snapshot.size;  // Get the count of documents
+
+      // Show the dialog to select the number of questions
+      final selectedCount = await showDialog<int>(
+        context: context,
+        builder: (context) => DynamicQuestionSelectDialog(totalQuestions: totalQuestions), // Pass the totalQuestions
+      );
+
+      // If a count is selected, navigate to the next page with the selected number of questions
+      if (selectedCount != null) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => UserExerciseSix(selectedQuestions: selectedCount), // Pass the selected count
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error fetching total questions: $e')),
+      );
+    }
   },
   style: ElevatedButton.styleFrom(
     backgroundColor: Colors.white, // White background for this button
@@ -644,7 +700,7 @@ ElevatedButton(
         Image.asset('assets/7.webp', width: 36, height: 36),
         SizedBox(width: 10),
         Text(
-          "Замын хөдөлгөөн зохицуулах дохио",
+          "Замын тэмдэглэл",
           style: TextStyle(
             color: Colors.black, // Text color for white button
             fontWeight: FontWeight.bold,
@@ -657,17 +713,37 @@ ElevatedButton(
       ],
     ),
   ),
-),      
+),
 SizedBox(height: 8,),
-ElevatedButton(
-  onPressed: () {
-    // Button click navigation
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => UserExerciseEight(), // Admin Quiz Page
-      ),
-    );
+ ElevatedButton(
+  onPressed: () async {
+    try {
+      // Fetch the count of documents from the SmartTrafficInputOneCollection
+      final snapshot = await FirebaseFirestore.instance
+          .collection('SmartTrafficInputSevenCollection')
+          .get();
+      final totalQuestions = snapshot.size;  // Get the count of documents
+
+      // Show the dialog to select the number of questions
+      final selectedCount = await showDialog<int>(
+        context: context,
+        builder: (context) => DynamicQuestionSelectDialog(totalQuestions: totalQuestions), // Pass the totalQuestions
+      );
+
+      // If a count is selected, navigate to the next page with the selected number of questions
+      if (selectedCount != null) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => UserExerciseSeven(selectedQuestions: selectedCount), // Pass the selected count
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error fetching total questions: $e')),
+      );
+    }
   },
   style: ElevatedButton.styleFrom(
     backgroundColor: Colors.white, // White background for this button
@@ -684,7 +760,7 @@ ElevatedButton(
         Image.asset('assets/8.webp', width: 36, height: 36),
         SizedBox(width: 10),
         Text(
-          "Анхааруулах дохио ба таних тэмдэг",
+          "Замын хөдөлгөөн зохицуулах дохио",
           style: TextStyle(
             color: Colors.black, // Text color for white button
             fontWeight: FontWeight.bold,
@@ -697,17 +773,37 @@ ElevatedButton(
       ],
     ),
   ),
-),      
+),
 SizedBox(height: 8,),
-ElevatedButton(
-  onPressed: () {
-    // Button click navigation
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => UserExerciseNine(), // Admin Quiz Page
-      ),
-    );
+ ElevatedButton(
+  onPressed: () async {
+    try {
+      // Fetch the count of documents from the SmartTrafficInputOneCollection
+      final snapshot = await FirebaseFirestore.instance
+          .collection('SmartTrafficInputEightCollection')
+          .get();
+      final totalQuestions = snapshot.size;  // Get the count of documents
+
+      // Show the dialog to select the number of questions
+      final selectedCount = await showDialog<int>(
+        context: context,
+        builder: (context) => DynamicQuestionSelectDialog(totalQuestions: totalQuestions), // Pass the totalQuestions
+      );
+
+      // If a count is selected, navigate to the next page with the selected number of questions
+      if (selectedCount != null) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => UserExerciseEight(selectedQuestions: selectedCount), // Pass the selected count
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error fetching total questions: $e')),
+      );
+    }
   },
   style: ElevatedButton.styleFrom(
     backgroundColor: Colors.white, // White background for this button
@@ -724,7 +820,7 @@ ElevatedButton(
         Image.asset('assets/9.webp', width: 36, height: 36),
         SizedBox(width: 10),
         Text(
-          "Хөдөлгөөн эхлэх болон чиг өөрчлөх",
+          "Анхааруулах дохио ба таних тэмдэг",
           style: TextStyle(
             color: Colors.black, // Text color for white button
             fontWeight: FontWeight.bold,
@@ -737,17 +833,37 @@ ElevatedButton(
       ],
     ),
   ),
-),      
+),
 SizedBox(height: 8,),
-ElevatedButton(
-  onPressed: () {
-    // Button click navigation
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => UserExerciseTen(), // Admin Quiz Page
-      ),
-    );
+ ElevatedButton(
+  onPressed: () async {
+    try {
+      // Fetch the count of documents from the SmartTrafficInputOneCollection
+      final snapshot = await FirebaseFirestore.instance
+          .collection('SmartTrafficInputNineCollection')
+          .get();
+      final totalQuestions = snapshot.size;  // Get the count of documents
+
+      // Show the dialog to select the number of questions
+      final selectedCount = await showDialog<int>(
+        context: context,
+        builder: (context) => DynamicQuestionSelectDialog(totalQuestions: totalQuestions), // Pass the totalQuestions
+      );
+
+      // If a count is selected, navigate to the next page with the selected number of questions
+      if (selectedCount != null) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => UserExerciseNine(selectedQuestions: selectedCount), // Pass the selected count
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error fetching total questions: $e')),
+      );
+    }
   },
   style: ElevatedButton.styleFrom(
     backgroundColor: Colors.white, // White background for this button
@@ -764,7 +880,7 @@ ElevatedButton(
         Image.asset('assets/10.webp', width: 36, height: 36),
         SizedBox(width: 10),
         Text(
-          "Тээврийн хэрэгсэл байрлан явах",
+          "Хөдөлгөөн эхлэх болон чиг өөрчлөх",
           style: TextStyle(
             color: Colors.black, // Text color for white button
             fontWeight: FontWeight.bold,
@@ -777,17 +893,37 @@ ElevatedButton(
       ],
     ),
   ),
-),      
+),
 SizedBox(height: 8,),
-ElevatedButton(
-  onPressed: () {
-    // Button click navigation
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => UserExerciseEleven(), // Admin Quiz Page
-      ),
-    );
+ ElevatedButton(
+  onPressed: () async {
+    try {
+      // Fetch the count of documents from the SmartTrafficInputOneCollection
+      final snapshot = await FirebaseFirestore.instance
+          .collection('SmartTrafficInputTenCollection')
+          .get();
+      final totalQuestions = snapshot.size;  // Get the count of documents
+
+      // Show the dialog to select the number of questions
+      final selectedCount = await showDialog<int>(
+        context: context,
+        builder: (context) => DynamicQuestionSelectDialog(totalQuestions: totalQuestions), // Pass the totalQuestions
+      );
+
+      // If a count is selected, navigate to the next page with the selected number of questions
+      if (selectedCount != null) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => UserExerciseTen(selectedQuestions: selectedCount), // Pass the selected count
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error fetching total questions: $e')),
+      );
+    }
   },
   style: ElevatedButton.styleFrom(
     backgroundColor: Colors.white, // White background for this button
@@ -804,7 +940,7 @@ ElevatedButton(
         Image.asset('assets/11.webp', width: 36, height: 36),
         SizedBox(width: 10),
         Text(
-          "Тээврийн хэрэгслийн хурд",
+          "Тээврийн хэрэгсэл байрлан явах",
           style: TextStyle(
             color: Colors.black, // Text color for white button
             fontWeight: FontWeight.bold,
@@ -817,17 +953,37 @@ ElevatedButton(
       ],
     ),
   ),
-),      
+),
 SizedBox(height: 8,),
-ElevatedButton(
-  onPressed: () {
-    // Button click navigation
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => UserExerciseTwelve(), // Admin Quiz Page
-      ),
-    );
+ ElevatedButton(
+  onPressed: () async {
+    try {
+      // Fetch the count of documents from the SmartTrafficInputOneCollection
+      final snapshot = await FirebaseFirestore.instance
+          .collection('SmartTrafficInputElevenCollection')
+          .get();
+      final totalQuestions = snapshot.size;  // Get the count of documents
+
+      // Show the dialog to select the number of questions
+      final selectedCount = await showDialog<int>(
+        context: context,
+        builder: (context) => DynamicQuestionSelectDialog(totalQuestions: totalQuestions), // Pass the totalQuestions
+      );
+
+      // If a count is selected, navigate to the next page with the selected number of questions
+      if (selectedCount != null) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => UserExerciseEleven(selectedQuestions: selectedCount), // Pass the selected count
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error fetching total questions: $e')),
+      );
+    }
   },
   style: ElevatedButton.styleFrom(
     backgroundColor: Colors.white, // White background for this button
@@ -844,7 +1000,7 @@ ElevatedButton(
         Image.asset('assets/12.webp', width: 36, height: 36),
         SizedBox(width: 10),
         Text(
-          "Гүйцэж түрүүлэх ба гүйцэх",
+          "Тээврийн хэрэгслийн хурд",
           style: TextStyle(
             color: Colors.black, // Text color for white button
             fontWeight: FontWeight.bold,
@@ -857,17 +1013,37 @@ ElevatedButton(
       ],
     ),
   ),
-),      
+),
 SizedBox(height: 8,),
-ElevatedButton(
-  onPressed: () {
-    // Button click navigation
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => UserExerciseThirteen(), // Admin Quiz Page
-      ),
-    );
+ ElevatedButton(
+  onPressed: () async {
+    try {
+      // Fetch the count of documents from the SmartTrafficInputOneCollection
+      final snapshot = await FirebaseFirestore.instance
+          .collection('SmartTrafficInputTwelveCollection')
+          .get();
+      final totalQuestions = snapshot.size;  // Get the count of documents
+
+      // Show the dialog to select the number of questions
+      final selectedCount = await showDialog<int>(
+        context: context,
+        builder: (context) => DynamicQuestionSelectDialog(totalQuestions: totalQuestions), // Pass the totalQuestions
+      );
+
+      // If a count is selected, navigate to the next page with the selected number of questions
+      if (selectedCount != null) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => UserExerciseTwelve(selectedQuestions: selectedCount), // Pass the selected count
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error fetching total questions: $e')),
+      );
+    }
   },
   style: ElevatedButton.styleFrom(
     backgroundColor: Colors.white, // White background for this button
@@ -884,7 +1060,7 @@ ElevatedButton(
         Image.asset('assets/13.webp', width: 36, height: 36),
         SizedBox(width: 10),
         Text(
-          "Түр ба удаан зогсох",
+          "Гүйцэж түрүүлэх ба гүйцэх",
           style: TextStyle(
             color: Colors.black, // Text color for white button
             fontWeight: FontWeight.bold,
@@ -897,17 +1073,37 @@ ElevatedButton(
       ],
     ),
   ),
-),      
+),
 SizedBox(height: 8,),
-ElevatedButton(
-  onPressed: () {
-    // Button click navigation
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => UserExerciseFourteen(), // Admin Quiz Page
-      ),
-    );
+ ElevatedButton(
+  onPressed: () async {
+    try {
+      // Fetch the count of documents from the SmartTrafficInputOneCollection
+      final snapshot = await FirebaseFirestore.instance
+          .collection('SmartTrafficInputThirteenCollection')
+          .get();
+      final totalQuestions = snapshot.size;  // Get the count of documents
+
+      // Show the dialog to select the number of questions
+      final selectedCount = await showDialog<int>(
+        context: context,
+        builder: (context) => DynamicQuestionSelectDialog(totalQuestions: totalQuestions), // Pass the totalQuestions
+      );
+
+      // If a count is selected, navigate to the next page with the selected number of questions
+      if (selectedCount != null) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => UserExerciseThirteen(selectedQuestions: selectedCount), // Pass the selected count
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error fetching total questions: $e')),
+      );
+    }
   },
   style: ElevatedButton.styleFrom(
     backgroundColor: Colors.white, // White background for this button
@@ -924,7 +1120,7 @@ ElevatedButton(
         Image.asset('assets/14.webp', width: 36, height: 36),
         SizedBox(width: 10),
         Text(
-          "Уулзвар нэвтрэх",
+          "Түр ба удаан зогсох",
           style: TextStyle(
             color: Colors.black, // Text color for white button
             fontWeight: FontWeight.bold,
@@ -937,17 +1133,37 @@ ElevatedButton(
       ],
     ),
   ),
-),      
+),
 SizedBox(height: 8,),
-ElevatedButton(
-  onPressed: () {
-    // Button click navigation
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => UserExerciseFifteen(), // Admin Quiz Page
-      ),
-    );
+ ElevatedButton(
+  onPressed: () async {
+    try {
+      // Fetch the count of documents from the SmartTrafficInputOneCollection
+      final snapshot = await FirebaseFirestore.instance
+          .collection('SmartTrafficInputFourteenCollection')
+          .get();
+      final totalQuestions = snapshot.size;  // Get the count of documents
+
+      // Show the dialog to select the number of questions
+      final selectedCount = await showDialog<int>(
+        context: context,
+        builder: (context) => DynamicQuestionSelectDialog(totalQuestions: totalQuestions), // Pass the totalQuestions
+      );
+
+      // If a count is selected, navigate to the next page with the selected number of questions
+      if (selectedCount != null) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => UserExerciseFourteen(selectedQuestions: selectedCount), // Pass the selected count
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error fetching total questions: $e')),
+      );
+    }
   },
   style: ElevatedButton.styleFrom(
     backgroundColor: Colors.white, // White background for this button
@@ -964,7 +1180,7 @@ ElevatedButton(
         Image.asset('assets/15.webp', width: 36, height: 36),
         SizedBox(width: 10),
         Text(
-          "Явган хүний гарц нэвтрэх",
+          "Уулзвар нэвтрэх",
           style: TextStyle(
             color: Colors.black, // Text color for white button
             fontWeight: FontWeight.bold,
@@ -977,17 +1193,37 @@ ElevatedButton(
       ],
     ),
   ),
-),      
+),
 SizedBox(height: 8,),
-ElevatedButton(
-  onPressed: () {
-    // Button click navigation
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => UserExerciseSixteen(), // Admin Quiz Page
-      ),
-    );
+ ElevatedButton(
+  onPressed: () async {
+    try {
+      // Fetch the count of documents from the SmartTrafficInputOneCollection
+      final snapshot = await FirebaseFirestore.instance
+          .collection('SmartTrafficInputFifteenCollection')
+          .get();
+      final totalQuestions = snapshot.size;  // Get the count of documents
+
+      // Show the dialog to select the number of questions
+      final selectedCount = await showDialog<int>(
+        context: context,
+        builder: (context) => DynamicQuestionSelectDialog(totalQuestions: totalQuestions), // Pass the totalQuestions
+      );
+
+      // If a count is selected, navigate to the next page with the selected number of questions
+      if (selectedCount != null) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => UserExerciseFifteen(selectedQuestions: selectedCount), // Pass the selected count
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error fetching total questions: $e')),
+      );
+    }
   },
   style: ElevatedButton.styleFrom(
     backgroundColor: Colors.white, // White background for this button
@@ -1004,6 +1240,66 @@ ElevatedButton(
         Image.asset('assets/16.webp', width: 36, height: 36),
         SizedBox(width: 10),
         Text(
+          "Явган хүний гарц нэвтрэх",
+          style: TextStyle(
+            color: Colors.black, // Text color for white button
+            fontWeight: FontWeight.bold,
+            fontSize: 12,
+          ),
+        ),
+        Spacer(),
+        // Next icon at the end of the button
+        Image.asset('assets/next.png', width: 24, height: 24),
+      ],
+    ),
+  ),
+),
+SizedBox(height: 8,),
+ ElevatedButton(
+  onPressed: () async {
+    try {
+      // Fetch the count of documents from the SmartTrafficInputOneCollection
+      final snapshot = await FirebaseFirestore.instance
+          .collection('SmartTrafficInputSixteenCollection')
+          .get();
+      final totalQuestions = snapshot.size;  // Get the count of documents
+
+      // Show the dialog to select the number of questions
+      final selectedCount = await showDialog<int>(
+        context: context,
+        builder: (context) => DynamicQuestionSelectDialog(totalQuestions: totalQuestions), // Pass the totalQuestions
+      );
+
+      // If a count is selected, navigate to the next page with the selected number of questions
+      if (selectedCount != null) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => UserExerciseSixteen(selectedQuestions: selectedCount), // Pass the selected count
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error fetching total questions: $e')),
+      );
+    }
+  },
+  style: ElevatedButton.styleFrom(
+    backgroundColor: Colors.white, // White background for this button
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(10),
+    ),
+    elevation: 2, // Adds shadow to give a slight raised effect
+  ),
+  child: Padding(
+    padding: const EdgeInsets.all(7),
+    child: Row(
+      children: [
+        // Icon for the button
+        Image.asset('assets/17.webp', width: 36, height: 36),
+        SizedBox(width: 10),
+        Text(
           "Төмөр замын гарам нэвтрэх",
           style: TextStyle(
             color: Colors.black, // Text color for white button
@@ -1017,67 +1313,37 @@ ElevatedButton(
       ],
     ),
   ),
-),      
-SizedBox(height: 8,),
- ElevatedButton(
-  onPressed: () {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => UserExerciseSeventeen(),
-      ),
-    );
-  },
-  style: ElevatedButton.styleFrom(
-    backgroundColor: Colors.white,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(10),
-    ),
-  ),
-  child: Padding(
-    padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 10), // Outer padding
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        // Зургийн орон зай
-        Image.asset('assets/15.webp', width: 36, height: 36),
-
-        SizedBox(width: 10),
-
-        // Текстэнд Expanded + Padding
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4.0),
-            child: Text(
-              "Гадна талын гэрэлтүүлэх хэрэгсэл-10",
-              style: TextStyle(
-                color: Colors.black,
-                fontWeight: FontWeight.bold,
-                fontSize: 12,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis, // Урт текст таслана
-            ),
-          ),
-        ),
-
-        // Icon
-        Image.asset('assets/next.png', width: 24, height: 24),
-      ],
-    ),
-  ),
 ),
-
 SizedBox(height: 8,),
-ElevatedButton(
-  onPressed: () {
-    // Button click navigation
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => UserExerciseEighteen(), // Admin Quiz Page
-      ),
-    );
+  ElevatedButton(
+  onPressed: () async {
+    try {
+      // Fetch the count of documents from the SmartTrafficInputOneCollection
+      final snapshot = await FirebaseFirestore.instance
+          .collection('SmartTrafficInputSeventeenCollection')
+          .get();
+      final totalQuestions = snapshot.size;  // Get the count of documents
+
+      // Show the dialog to select the number of questions
+      final selectedCount = await showDialog<int>(
+        context: context,
+        builder: (context) => DynamicQuestionSelectDialog(totalQuestions: totalQuestions), // Pass the totalQuestions
+      );
+
+      // If a count is selected, navigate to the next page with the selected number of questions
+      if (selectedCount != null) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => UserExerciseSeventeen(selectedQuestions: selectedCount), // Pass the selected count
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error fetching total questions: $e')),
+      );
+    }
   },
   style: ElevatedButton.styleFrom(
     backgroundColor: Colors.white, // White background for this button
@@ -1094,7 +1360,7 @@ ElevatedButton(
         Image.asset('assets/18.webp', width: 36, height: 36),
         SizedBox(width: 10),
         Text(
-          "Хорооллын доторх хөдөлгөөн",
+          " Гадна талын гэрэлтүүлэх хэрэгслийг хэрэглэх",
           style: TextStyle(
             color: Colors.black, // Text color for white button
             fontWeight: FontWeight.bold,
@@ -1107,17 +1373,37 @@ ElevatedButton(
       ],
     ),
   ),
-),      
+),
 SizedBox(height: 8,),
-ElevatedButton(
-  onPressed: () {
-    // Button click navigation
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => UserExerciseNineteen(), // Admin Quiz Page
-      ),
-    );
+ ElevatedButton(
+  onPressed: () async {
+    try {
+      // Fetch the count of documents from the SmartTrafficInputOneCollection
+      final snapshot = await FirebaseFirestore.instance
+          .collection('SmartTrafficInputEighteenCollection')
+          .get();
+      final totalQuestions = snapshot.size;  // Get the count of documents
+
+      // Show the dialog to select the number of questions
+      final selectedCount = await showDialog<int>(
+        context: context,
+        builder: (context) => DynamicQuestionSelectDialog(totalQuestions: totalQuestions), // Pass the totalQuestions
+      );
+
+      // If a count is selected, navigate to the next page with the selected number of questions
+      if (selectedCount != null) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => UserExerciseEighteen(selectedQuestions: selectedCount), // Pass the selected count
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error fetching total questions: $e')),
+      );
+    }
   },
   style: ElevatedButton.styleFrom(
     backgroundColor: Colors.white, // White background for this button
@@ -1134,6 +1420,66 @@ ElevatedButton(
         Image.asset('assets/19.webp', width: 36, height: 36),
         SizedBox(width: 10),
         Text(
+          "Хорооллын доторх хөдөлгөөн",
+          style: TextStyle(
+            color: Colors.black, // Text color for white button
+            fontWeight: FontWeight.bold,
+            fontSize: 12,
+          ),
+        ),
+        Spacer(),
+        // Next icon at the end of the button
+        Image.asset('assets/next.png', width: 24, height: 24),
+      ],
+    ),
+  ),
+),
+SizedBox(height: 8,),
+ ElevatedButton(
+  onPressed: () async {
+    try {
+      // Fetch the count of documents from the SmartTrafficInputOneCollection
+      final snapshot = await FirebaseFirestore.instance
+          .collection('SmartTrafficInputNineteenCollection')
+          .get();
+      final totalQuestions = snapshot.size;  // Get the count of documents
+
+      // Show the dialog to select the number of questions
+      final selectedCount = await showDialog<int>(
+        context: context,
+        builder: (context) => DynamicQuestionSelectDialog(totalQuestions: totalQuestions), // Pass the totalQuestions
+      );
+
+      // If a count is selected, navigate to the next page with the selected number of questions
+      if (selectedCount != null) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => UserExerciseNineteen(selectedQuestions: selectedCount), // Pass the selected count
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error fetching total questions: $e')),
+      );
+    }
+  },
+  style: ElevatedButton.styleFrom(
+    backgroundColor: Colors.white, // White background for this button
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(10),
+    ),
+    elevation: 2, // Adds shadow to give a slight raised effect
+  ),
+  child: Padding(
+    padding: const EdgeInsets.all(7),
+    child: Row(
+      children: [
+        // Icon for the button
+        Image.asset('assets/20.webp', width: 36, height: 36),
+        SizedBox(width: 10),
+        Text(
           "Тууш замын хөдөлгөөн",
           style: TextStyle(
             color: Colors.black, // Text color for white button
@@ -1147,66 +1493,37 @@ ElevatedButton(
       ],
     ),
   ),
-),      
-SizedBox(height: 8,),
- ElevatedButton(
-  onPressed: () {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => UserExerciseTwenty(),
-      ),
-    );
-  },
-  style: ElevatedButton.styleFrom(
-    backgroundColor: Colors.white,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(10),
-    ),
-  ),
-  child: Padding(
-    padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 10), // Outer padding
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        // Зургийн орон зай
-        Image.asset('assets/20.webp', width: 36, height: 36),
-
-        SizedBox(width: 10),
-
-        // Текстэнд Expanded + Padding
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4.0),
-            child: Text(
-              "Механикжсан тээврийн хэрэгслийг чирэх-10",
-              style: TextStyle(
-                color: Colors.black,
-                fontWeight: FontWeight.bold,
-                fontSize: 12,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis, // Урт текст таслана
-            ),
-          ),
-        ),
-
-        // Icon
-        Image.asset('assets/next.png', width: 24, height: 24),
-      ],
-    ),
-  ),
 ),
 SizedBox(height: 8,),
-ElevatedButton(
-  onPressed: () {
-    // Button click navigation
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => UserExerciseTwentyOne(), // Admin Quiz Page
-      ),
-    );
+  ElevatedButton(
+  onPressed: () async {
+    try {
+      // Fetch the count of documents from the SmartTrafficInputOneCollection
+      final snapshot = await FirebaseFirestore.instance
+          .collection('SmartTrafficInputTwentyCollection')
+          .get();
+      final totalQuestions = snapshot.size;  // Get the count of documents
+
+      // Show the dialog to select the number of questions
+      final selectedCount = await showDialog<int>(
+        context: context,
+        builder: (context) => DynamicQuestionSelectDialog(totalQuestions: totalQuestions), // Pass the totalQuestions
+      );
+
+      // If a count is selected, navigate to the next page with the selected number of questions
+      if (selectedCount != null) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => UserExerciseTwenty(selectedQuestions: selectedCount), // Pass the selected count
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error fetching total questions: $e')),
+      );
+    }
   },
   style: ElevatedButton.styleFrom(
     backgroundColor: Colors.white, // White background for this button
@@ -1223,6 +1540,66 @@ ElevatedButton(
         Image.asset('assets/21.webp', width: 36, height: 36),
         SizedBox(width: 10),
         Text(
+          "Механикжсан тээврийн хэрэгслийг чирэх",
+          style: TextStyle(
+            color: Colors.black, // Text color for white button
+            fontWeight: FontWeight.bold,
+            fontSize: 12,
+          ),
+        ),
+        Spacer(),
+        // Next icon at the end of the button
+        Image.asset('assets/next.png', width: 24, height: 24),
+      ],
+    ),
+  ),
+),
+SizedBox(height: 8,),
+ ElevatedButton(
+  onPressed: () async {
+    try {
+      // Fetch the count of documents from the SmartTrafficInputOneCollection
+      final snapshot = await FirebaseFirestore.instance
+          .collection('SmartTrafficInputTwentyOneCollection')
+          .get();
+      final totalQuestions = snapshot.size;  // Get the count of documents
+
+      // Show the dialog to select the number of questions
+      final selectedCount = await showDialog<int>(
+        context: context,
+        builder: (context) => DynamicQuestionSelectDialog(totalQuestions: totalQuestions), // Pass the totalQuestions
+      );
+
+      // If a count is selected, navigate to the next page with the selected number of questions
+      if (selectedCount != null) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => UserExerciseTwentyOne(selectedQuestions: selectedCount), // Pass the selected count
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error fetching total questions: $e')),
+      );
+    }
+  },
+  style: ElevatedButton.styleFrom(
+    backgroundColor: Colors.white, // White background for this button
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(10),
+    ),
+    elevation: 2, // Adds shadow to give a slight raised effect
+  ),
+  child: Padding(
+    padding: const EdgeInsets.all(7),
+    child: Row(
+      children: [
+        // Icon for the button
+        Image.asset('assets/22.webp', width: 36, height: 36),
+        SizedBox(width: 10),
+        Text(
           "Хүн ба ачаа тээвэрлэх",
           style: TextStyle(
             color: Colors.black, // Text color for white button
@@ -1236,51 +1613,122 @@ ElevatedButton(
       ],
     ),
   ),
-),      
+),
 SizedBox(height: 8,),
-   ElevatedButton(
-  onPressed: () {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => UserExerciseTwentyTwo(),
-      ),
-    );
+    ElevatedButton(
+  onPressed: () async {
+    try {
+      // Fetch the count of documents from the SmartTrafficInputOneCollection
+      final snapshot = await FirebaseFirestore.instance
+          .collection('SmartTrafficInputTwentyTwoCollection')
+          .get();
+      final totalQuestions = snapshot.size;  // Get the count of documents
+
+      // Show the dialog to select the number of questions
+      final selectedCount = await showDialog<int>(
+        context: context,
+        builder: (context) => DynamicQuestionSelectDialog(totalQuestions: totalQuestions), // Pass the totalQuestions
+      );
+
+      // If a count is selected, navigate to the next page with the selected number of questions
+      if (selectedCount != null) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => UserExerciseTwentyTwo(selectedQuestions: selectedCount), // Pass the selected count
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error fetching total questions: $e')),
+      );
+    }
   },
   style: ElevatedButton.styleFrom(
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.white, // White background for this button
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(10),
     ),
+    elevation: 2, // Adds shadow to give a slight raised effect
   ),
   child: Padding(
-    padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 10), // Outer padding
+    padding: const EdgeInsets.all(7),
     child: Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // Зургийн орон зай
-        Image.asset('assets/22.webp', width: 36, height: 36),
-
+        // Icon for the button
+        Image.asset('assets/23.webp', width: 36, height: 36),
         SizedBox(width: 10),
-
-        // Текстэнд Expanded + Padding
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4.0),
-            child: Text(
-              "Тээврийн хэрэгслийн эвдрэл, гэмтэл, зөрчил-10",
-              style: TextStyle(
-                color: Colors.black,
-                fontWeight: FontWeight.bold,
-                fontSize: 12,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis, // Урт текст таслана
-            ),
+        Text(
+          "Тээврийн хэрэгслийн эвдрэл гэмтэл, техникийн зөрчил",
+          style: TextStyle(
+            color: Colors.black, // Text color for white button
+            fontWeight: FontWeight.bold,
+            fontSize: 12,
           ),
         ),
+        Spacer(),
+        // Next icon at the end of the button
+        Image.asset('assets/next.png', width: 24, height: 24),
+      ],
+    ),
+  ),
+),
+SizedBox(height: 8,),
+  ElevatedButton(
+  onPressed: () async {
+    try {
+      // Fetch the count of documents from the SmartTrafficInputOneCollection
+      final snapshot = await FirebaseFirestore.instance
+          .collection('SmartTrafficInputTwentyThreeCollection')
+          .get();
+      final totalQuestions = snapshot.size;  // Get the count of documents
 
-        // Icon
+      // Show the dialog to select the number of questions
+      final selectedCount = await showDialog<int>(
+        context: context,
+        builder: (context) => DynamicQuestionSelectDialog(totalQuestions: totalQuestions), // Pass the totalQuestions
+      );
+
+      // If a count is selected, navigate to the next page with the selected number of questions
+      if (selectedCount != null) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => UserExerciseTwentyThree(selectedQuestions: selectedCount), // Pass the selected count
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error fetching total questions: $e')),
+      );
+    }
+  },
+  style: ElevatedButton.styleFrom(
+    backgroundColor: Colors.white, // White background for this button
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(10),
+    ),
+    elevation: 2, // Adds shadow to give a slight raised effect
+  ),
+  child: Padding(
+    padding: const EdgeInsets.all(7),
+    child: Row(
+      children: [
+        // Icon for the button
+        Image.asset('assets/2.png', width: 36, height: 36),
+        SizedBox(width: 10),
+        Text(
+          "Тээврийн хэрэгслийг аюулгүй жолоодох онол",
+          style: TextStyle(
+            color: Colors.black, // Text color for white button
+            fontWeight: FontWeight.bold,
+            fontSize: 12,
+          ),
+        ),
+        Spacer(),
+        // Next icon at the end of the button
         Image.asset('assets/next.png', width: 24, height: 24),
       ],
     ),
@@ -1288,63 +1736,34 @@ SizedBox(height: 8,),
 ),
 SizedBox(height: 8,),
  ElevatedButton(
-  onPressed: () {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => UserExerciseTwentyThree(),
-      ),
-    );
-  },
-  style: ElevatedButton.styleFrom(
-    backgroundColor: Colors.white,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(10),
-    ),
-  ),
-  child: Padding(
-    padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 10), // Outer padding
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        // Зургийн орон зай
-        Image.asset('assets/23.webp', width: 36, height: 36),
+  onPressed: () async {
+    try {
+      // Fetch the count of documents from the SmartTrafficInputOneCollection
+      final snapshot = await FirebaseFirestore.instance
+          .collection('SmartTrafficInputTwentyFourCollection')
+          .get();
+      final totalQuestions = snapshot.size;  // Get the count of documents
 
-        SizedBox(width: 10),
+      // Show the dialog to select the number of questions
+      final selectedCount = await showDialog<int>(
+        context: context,
+        builder: (context) => DynamicQuestionSelectDialog(totalQuestions: totalQuestions), // Pass the totalQuestions
+      );
 
-        // Текстэнд Expanded + Padding
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4.0),
-            child: Text(
-              "Тээврийн хэрэгслийг аюулгүй холоодох онол-10",
-              style: TextStyle(
-                color: Colors.black,
-                fontWeight: FontWeight.bold,
-                fontSize: 12,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis, // Урт текст таслана
-            ),
+      // If a count is selected, navigate to the next page with the selected number of questions
+      if (selectedCount != null) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => UserExerciseTwentyFour(selectedQuestions: selectedCount), // Pass the selected count
           ),
-        ),
-
-        // Icon
-        Image.asset('assets/next.png', width: 24, height: 24),
-      ],
-    ),
-  ),
-),
-SizedBox(height: 8,),
-ElevatedButton(
-  onPressed: () {
-    // Button click navigation
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => UserExerciseTwentyFour(), // Admin Quiz Page
-      ),
-    );
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error fetching total questions: $e')),
+      );
+    }
   },
   style: ElevatedButton.styleFrom(
     backgroundColor: Colors.white, // White background for this button
@@ -1374,7 +1793,7 @@ ElevatedButton(
       ],
     ),
   ),
-),      
+),
 SizedBox(height: 8,),
 ElevatedButton(
   style: ElevatedButton.styleFrom(

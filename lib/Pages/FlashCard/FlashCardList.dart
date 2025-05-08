@@ -19,20 +19,20 @@ class FlashCardList extends StatelessWidget {
 
   // Function to handle navigation to different flashcard pages
   void _navigateToFlashCard(BuildContext context, String color) {
-    if (color == 'Yellow') {
+    if (color == 'Red') {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => YellowFlashCard()),  // Navigate to Yellow FlashCard page
+        MaterialPageRoute(builder: (context) => RedFlashCard()),  // Navigate to Yellow FlashCard page
       );
     } else if (color == 'Orange') {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => OrangeFlashCard()),  // Navigate to Orange FlashCard page
       );
-    } else if (color == 'Red') {
+    } else if (color == 'Yellow') {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => RedFlashCard()),  // Navigate to Red FlashCard page
+        MaterialPageRoute(builder: (context) => YellowFlashCard()),  // Navigate to Red FlashCard page
       );
     }
   }
@@ -46,10 +46,10 @@ class FlashCardList extends StatelessWidget {
         children: List.generate(3, (index) {
           // Set different colors for each button
           Color buttonColor = index == 0
-              ? Colors.yellow
+              ? Colors.red
               : index == 1
                   ? Colors.orange
-                  : Colors.red;
+                  : Colors.yellow;
 
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: 10),

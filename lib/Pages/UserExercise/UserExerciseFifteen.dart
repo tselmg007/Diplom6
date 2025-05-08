@@ -1,9 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // To get the current user's UID
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class UserExerciseFifteen extends StatefulWidget {
-  const UserExerciseFifteen({Key? key}) : super(key: key);
+  final int selectedQuestions;
+
+  const UserExerciseFifteen({Key? key, required this.selectedQuestions}) : super(key: key);
 
   @override
   State<UserExerciseFifteen> createState() => _UserExerciseState();
@@ -22,142 +24,127 @@ class _UserExerciseState extends State<UserExerciseFifteen> {
     fetchQuizzes();
   }
 
-  // Fetch quizzes from Firestore
   Future<void> fetchQuizzes() async {
-    final snapshot = await FirebaseFirestore.instance
-        .collection('SmartTrafficInputFifteenCollection')
-        .orderBy('CreatedAt')
-        .get();
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('SmartTrafficInputFifteenCollection')
+          .orderBy('CreatedAt')
+          .get();
 
-    setState(() {
-      quizList = snapshot.docs.map((doc) => doc.data()).toList();
-    });
+      setState(() {
+        quizList = snapshot.docs.map((doc) => doc.data()).toList();
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error fetching quizzes: $e')),
+      );
+    }
   }
 
-  // Save wrong answer attempts to Firestore
   Future<void> saveWrongAnswerToFirestore(Map<String, dynamic> quizData) async {
     final userUID = FirebaseAuth.instance.currentUser?.uid;
 
     if (userUID != null) {
-      quizData['userUID'] = userUID; // Add userUID to the quizData map
+      try {
+        final updatedData = Map<String, dynamic>.from(quizData);
+        updatedData['userUID'] = userUID;
+        updatedData['wrongAttempts'] = FieldValue.increment(1);
 
-      // Ensure wrongAttempts is incremented by 1 each time
-      await FirebaseFirestore.instance
-          .collection('WrongAnswerTestFifteenCollection')
-          .doc(quizData['questionId'])
-          .update({
-            'wrongAttempts': FieldValue.increment(1), // Increment wrongAttempts by 1
-          });
+        await FirebaseFirestore.instance
+            .collection('WrongAnswerTestFifteenCollection')
+            .doc(quizData['questionId'])
+            .set(updatedData, SetOptions(merge: true));
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error saving wrong answer: $e')),
+        );
+      }
     }
   }
 
-  // Check wrong attempts and move to the flashcard collections
   Future<void> checkWrongAttemptsAndSaveToFlashcards(Map<String, dynamic> currentQuiz) async {
-    final snapshot = await FirebaseFirestore.instance
-        .collection('WrongAnswerTestFifteenCollection')
-        .doc(currentQuiz['questionId'])
-        .get();
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('WrongAnswerTestFifteenCollection')
+          .doc(currentQuiz['questionId'])
+          .get();
 
-    if (snapshot.exists) {
-      final data = snapshot.data();
-      final wrongAttempts = data?['wrongAttempts'] ?? 0;
+      if (snapshot.exists) {
+        final data = snapshot.data();
+        final wrongAttempts = data?['wrongAttempts'] ?? 0;
 
-      // If wrongAttempts is exactly 3, save to YellowFlashCardCollection
-      if (wrongAttempts == 3) {
-        moveToFlashcardCollection(currentQuiz, 'YellowFlashCardCollection');
+        String targetCollection = '';
+        if (wrongAttempts == 3) {
+          targetCollection = 'YellowFlashCardCollection';
+        } else if (wrongAttempts > 3 && wrongAttempts <= 5) {
+          targetCollection = 'OrangeFlashCardCollection';
+        } else if (wrongAttempts > 5) {
+          targetCollection = 'RedFlashCardCollection';
+        }
+
+        if (targetCollection.isNotEmpty) {
+          await moveToFlashcardCollection(currentQuiz, targetCollection);
+        }
       }
-      // If wrongAttempts is between 4 and 5, save to OrangeFlashCardCollection
-      else if (wrongAttempts > 3 && wrongAttempts <= 5) {
-        moveToFlashcardCollection(currentQuiz, 'OrangeFlashCardCollection');
-      }
-      // If wrongAttempts is greater than 5, save to RedFlashCardCollection
-      else if (wrongAttempts > 5) {
-        moveToFlashcardCollection(currentQuiz, 'RedFlashCardCollection');
-      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error checking wrong attempts: $e')),
+      );
     }
   }
 
-  // Move to the correct flashcard collection and delete the document from the previous collection
   Future<void> moveToFlashcardCollection(Map<String, dynamic> quizData, String targetCollection) async {
     final userUID = FirebaseAuth.instance.currentUser?.uid;
 
     if (userUID != null) {
-      quizData['userUID'] = userUID;
-      String questionId = quizData['questionId'];
+      try {
+        quizData['userUID'] = userUID;
+        String questionId = quizData['questionId'];
 
-      // Save quiz data to the target flashcard collection
-      await FirebaseFirestore.instance
-          .collection(targetCollection)
-          .doc(questionId)
-          .set(quizData, SetOptions(merge: true));
+        await FirebaseFirestore.instance
+            .collection(targetCollection)
+            .doc(questionId)
+            .set(quizData, SetOptions(merge: true));
 
-      // Remove from the previous collection (based on wrongAttempts logic)
-      if (targetCollection == 'YellowFlashCardCollection') {
-        await FirebaseFirestore.instance
-            .collection('OrangeFlashCardCollection')
-            .doc(questionId)
-            .delete();
-        await FirebaseFirestore.instance
-            .collection('RedFlashCardCollection')
-            .doc(questionId)
-            .delete();
-      } else if (targetCollection == 'OrangeFlashCardCollection') {
-        await FirebaseFirestore.instance
-            .collection('YellowFlashCardCollection')
-            .doc(questionId)
-            .delete();
-        await FirebaseFirestore.instance
-            .collection('RedFlashCardCollection')
-            .doc(questionId)
-            .delete();
-      } else if (targetCollection == 'RedFlashCardCollection') {
-        await FirebaseFirestore.instance
-            .collection('YellowFlashCardCollection')
-            .doc(questionId)
-            .delete();
-        await FirebaseFirestore.instance
-            .collection('OrangeFlashCardCollection')
-            .doc(questionId)
-            .delete();
+        final collections = ['YellowFlashCardCollection', 'OrangeFlashCardCollection', 'RedFlashCardCollection'];
+        for (var collection in collections) {
+          if (collection != targetCollection) {
+            await FirebaseFirestore.instance.collection(collection).doc(questionId).delete();
+          }
+        }
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error moving to flashcard collection: $e')),
+        );
       }
     }
   }
 
-  // Move to the next question
   void nextQuestion() async {
     final currentQuiz = quizList[currentQuestionIndex];
     final correctAnswer = currentQuiz['CorrectAnswer'];
 
-    // Check if the selected answer is correct
     if (selectedOption != null && selectedOption == correctAnswer) {
       correctAnswersCount++;
     }
 
-    // Save wrong attempts to Firestore and check if the question should move to flashcards
-    if (selectedOption != null && selectedOption != correctAnswer) {
-      await saveWrongAnswerToFirestore(currentQuiz);
-    }
-
-    // Check the wrong attempts and save to FlashCard collections (Yellow, Orange, Red)
     await checkWrongAttemptsAndSaveToFlashcards(currentQuiz);
 
-    // Move to the next question or show final result
-    if (currentQuestionIndex < quizList.length - 1) {
+    if (currentQuestionIndex < widget.selectedQuestions - 1) {
       setState(() {
         currentQuestionIndex++;
-        selectedOption = null; // Reset answer for the next question
-        isAnswerSelected = false; // Reset selection
+        selectedOption = null;
+        isAnswerSelected = false;
       });
     } else {
-      showFinalResult();
+      showFinalResult();  // This will show the result dialog at the end of the quiz
     }
   }
 
-  // Show the final result when all questions are done
   void showFinalResult() {
     showDialog(
       context: context,
-      barrierDismissible: false,
+      barrierDismissible: false,  // Prevent dialog from being dismissed by tapping outside
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
         title: const Text("Дасгал ажиллаж дууслаа. 🎉"),
@@ -166,15 +153,23 @@ class _UserExerciseState extends State<UserExerciseFifteen> {
           "Алдсан ${quizList.length - correctAnswersCount} асуулт тухайн дэд бүлгийн алдсан тестийн санд бүртгэгдлээ.",
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              // Close only the dialog, not the page
+              Navigator.of(context).pop(); // Dismiss the dialog
+            },
+            child: const Text(
+              'OK',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
       ),
     );
-
-    Future.delayed(const Duration(seconds: 4), () {
-      if (Navigator.of(context).canPop()) {
-        Navigator.of(context).pop(); // dialog
-        Navigator.of(context).pop(); // page
-      }
-    });
   }
 
   @override
@@ -195,7 +190,7 @@ class _UserExerciseState extends State<UserExerciseFifteen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          "Асуулт ${currentQuestionIndex + 1}/${quizList.length}",
+          "Асуулт ${currentQuestionIndex + 1}/${widget.selectedQuestions}",
           style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 15),
         ),
         backgroundColor: Colors.blue[100],
@@ -223,7 +218,6 @@ class _UserExerciseState extends State<UserExerciseFifteen> {
                 children: [
                   Text(
                     question,
-                    textAlign: TextAlign.start,
                     style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 10),
@@ -240,8 +234,9 @@ class _UserExerciseState extends State<UserExerciseFifteen> {
                     ),
                   const SizedBox(height: 20),
                   ...List.generate(answers.length, (index) {
-                    final isSelected = selectedOption == answers[index];
-                    final isCorrect = answers[index] == currentQuiz['CorrectAnswer'];
+                    final answer = answers[index];
+                    final isSelected = selectedOption == answer;
+                    final isCorrect = answer == currentQuiz['CorrectAnswer'];
 
                     Color buttonColor = Colors.white;
                     if (selectedOption != null) {
@@ -258,25 +253,25 @@ class _UserExerciseState extends State<UserExerciseFifteen> {
                         onPressed: !isAnswerSelected
                             ? () {
                                 setState(() {
-                                  selectedOption = answers[index];
+                                  selectedOption = answer;
                                   isAnswerSelected = true;
                                 });
-                                // Show the correct/incorrect SnackBar immediately
-                                final correctAnswer = currentQuiz['CorrectAnswer'];
-                                if (selectedOption == correctAnswer) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text("🎉 Зөв хариулт!"),
-                                      backgroundColor: Colors.green,
+
+                                final isCorrect = selectedOption == currentQuiz['CorrectAnswer'];
+
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      isCorrect
+                                          ? "🎉 Зөв хариулт!"
+                                          : "❌ Буруу хариулт. Зөв хариулт: ${currentQuiz['CorrectAnswer']}",
                                     ),
-                                  );
-                                } else {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text("❌ Буруу хариулт. Зөв хариулт: $correctAnswer"),
-                                      backgroundColor: Colors.redAccent,
-                                    ),
-                                  );
+                                    backgroundColor: isCorrect ? Colors.green : Colors.redAccent,
+                                  ),
+                                );
+
+                                if (!isCorrect) {
+                                  saveWrongAnswerToFirestore(currentQuiz);
                                 }
                               }
                             : null,
@@ -291,7 +286,7 @@ class _UserExerciseState extends State<UserExerciseFifteen> {
                         child: Align(
                           alignment: Alignment.centerLeft,
                           child: Text(
-                            answers[index],
+                            answer,
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 14,
@@ -306,7 +301,6 @@ class _UserExerciseState extends State<UserExerciseFifteen> {
               ),
             ),
           ),
-          // 🧭 Буцах + Дараа / Дуусгах товчнууд
           Positioned(
             bottom: 20,
             left: 20,
@@ -352,7 +346,7 @@ class _UserExerciseState extends State<UserExerciseFifteen> {
                       ),
                     ),
                     child: Text(
-                      currentQuestionIndex == quizList.length - 1 ? 'Дуусгах' : 'Дараа',
+                      currentQuestionIndex == widget.selectedQuestions - 1 ? 'Дуусгах' : 'Дараа',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 15,

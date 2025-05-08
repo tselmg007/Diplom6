@@ -40,7 +40,7 @@ class _WrongAnswerDetailPage1State extends State<YellowFlashCard> {
 
         setState(() {
           quizList = snapshot.docs
-              .map((doc) => doc.data() as Map<String, dynamic>)
+              .map((doc) => doc.data())
               .toList();
           isLoading = false;  // Data has been fetched, hide loading
         });

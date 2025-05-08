@@ -6,7 +6,7 @@ class DynamicQuestionSelectDialog extends StatelessWidget {
   const DynamicQuestionSelectDialog({Key? key, required this.totalQuestions}) : super(key: key);
 
   List<int> generateOptions() {
-    int step = (totalQuestions / 4).floor(); 
+    int step = (totalQuestions / 4).floor();
     return [
       step,
       step * 2,
@@ -36,9 +36,9 @@ class DynamicQuestionSelectDialog extends StatelessWidget {
               Column(
                 children: [
                   ElevatedButton(
-                    onPressed: () => Navigator.pop(context, count),
+                    onPressed: () => Navigator.pop(context, count), // Return selected count
                     style: ElevatedButton.styleFrom(
-                      minimumSize: Size(double.infinity, 50), // Full width buttons
+                      minimumSize: Size(double.infinity, 50),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(5),
                       ),
@@ -46,8 +46,7 @@ class DynamicQuestionSelectDialog extends StatelessWidget {
                     ),
                     child: Text('$count асуулт'),
                   ),
-                  // Add space between buttons
-                  SizedBox(height: 5), // Adjust the height of the space as needed
+                  SizedBox(height: 5),
                 ],
               ),
           ],
