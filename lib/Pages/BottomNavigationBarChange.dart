@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:traffic/Pages/FlashCard/FlashCardList.dart';
+import 'package:traffic/Pages/SignUpAndLogin/ProfilePage.dart';
 import 'package:traffic/Pages/UserDashboard.dart';
 import 'package:traffic/Pages/UserHomeScreen.dart';
 import 'package:traffic/Pages/UserTakeExam.dart';
@@ -23,6 +24,7 @@ class _BottomNavigationBarChangeState extends State<BottomNavigationBarChange> {
     const WrongAnswerListPage (),
     const UserDashboard (),
      FlashCardList (),
+     ProfilePage(),
   ];
 
   @override
@@ -74,7 +76,11 @@ class _BottomNavigationBarChangeState extends State<BottomNavigationBarChange> {
     ),
      BottomNavigationBarItem(
       icon: Icon(Icons.sd_card_alert),
-      label: "FlashCard",
+      label: "Флаш карт",
+    ),
+     BottomNavigationBarItem(
+      icon: Icon(Icons.person),
+      label: "Профайл",
     ),
   ],
 ),

@@ -2,112 +2,142 @@ import 'package:flutter/material.dart';
 import 'package:traffic/Pages/FlashCard/RedFlashCard.dart';
 import 'package:traffic/Pages/FlashCard/OrangeFlashCard.dart';
 import 'package:traffic/Pages/FlashCard/YellowFlashCard.dart';
+import 'package:traffic/Pages/FlashCard/ComplicatedQuestion.dart';
+import 'package:traffic/Pages/FlashCard/SkipQuizPage.dart';
 
 class FlashCardList extends StatelessWidget {
   final List<String> buttonTitles = [
     "Go to Red Flashcard",
     "Go to Orange Flashcard",
     "Go to Yellow Flashcard",
+    "Go to Pink Flashcard",
+    "Go to Gray Flashcard",
   ];
 
-  // Description text for each flashcard
   final List<String> flashCardDescriptions = [
-    "Хэрэглэгч нэг асуултанд 3 удаа алдсан тохиолдолд шар карт руу асуулт нэмэгдэнэ.",
-    "Хэрэглэгч нэг асуултанд 4 болон 5 удаа алдсан тохиолдолд улбар шар карт руу асуулт нэмэгдэнэ.",
-    "Хэрэглэгч нэг асуултанд 5 аас олон удаа алдсан тохиолдолд улаан карт руу асуулт нэмэгдэнэ.",
+    "5 аас олон удаа алдсан асуулт",
+    "4 болон 5 удаа алдсан асуулт",
+    "3 удаа алдсан асуулт",
+    "Алгассан асуулт",
+    "Эргэлзээтэй check-лэсэн асуулт",
   ];
 
-  // Function to handle navigation to different flashcard pages
+  final List<Color> cardColors = [
+    Colors.red,
+    Colors.orange,
+    Colors.yellow,
+    Colors.pink,
+    Colors.grey,
+  ];
+
   void _navigateToFlashCard(BuildContext context, String color) {
     if (color == 'Red') {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => RedFlashCard()),  // Navigate to Yellow FlashCard page
-      );
+      Navigator.push(context, MaterialPageRoute(builder: (_) => RedFlashCard()));
     } else if (color == 'Orange') {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => OrangeFlashCard()),  // Navigate to Orange FlashCard page
-      );
+      Navigator.push(context, MaterialPageRoute(builder: (_) => OrangeFlashCard()));
     } else if (color == 'Yellow') {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => YellowFlashCard()),  // Navigate to Red FlashCard page
-      );
+      Navigator.push(context, MaterialPageRoute(builder: (_) => YellowFlashCard()));
+    } else if (color == 'Pink') {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => ComplicatedQuestion()));
+    } else if (color == 'Gray') {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => SkipQuizPage()));
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: List.generate(3, (index) {
-          // Set different colors for each button
-          Color buttonColor = index == 0
-              ? Colors.red
-              : index == 1
-                  ? Colors.orange
-                  : Colors.yellow;
-
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            child: Column(
-              children: [
-                ElevatedButton(
-                  onPressed: () => _navigateToFlashCard(context, buttonTitles[index].split(' ')[2]), // Split the title to extract the color
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: buttonColor,  // Set the button's background color
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                    padding: EdgeInsets.symmetric(vertical: 20, horizontal: 40),
-                    elevation: 5,
-                  ),
-                  child: Stack(
-                    children: [
-                      // Background image
-                      Positioned.fill(
-                        child: Image.asset(
-                          'assets/1111.jpg', // Ensure this image path is correct
-                          fit: BoxFit.cover,
-                          color: Colors.black.withOpacity(0.3), // Apply a dark overlay to the image for text contrast
-                          colorBlendMode: BlendMode.darken,
-                        ),
+      body: Stack(
+        children: [
+          Center(
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: buttonTitles.length,
+              itemBuilder: (context, index) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+                  child: ElevatedButton(
+                    onPressed: () {
+                      final color = buttonTitles[index].split(' ')[2];
+                      _navigateToFlashCard(context, color);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: cardColors[index],
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15),
                       ),
-                      // Title on top of the image
-                      Center(
-                        child: Text(
-                          buttonTitles[index],
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
-                            color: Colors.white,  // Make the text color white for contrast
+                      padding: EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+                      elevation: 5,
+                    ),
+                    child: Container(
+                      height: 50,
+                      width: double.infinity,
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          Image.asset(
+                            'assets/1111.jpg',
+                            fit: BoxFit.cover,
+                            color: Colors.black.withOpacity(0.3),
+                            colorBlendMode: BlendMode.darken,
                           ),
-                          textAlign: TextAlign.center,
-                        ),
+                          Center(
+                            child: Text(
+                              buttonTitles[index],
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                                color: Colors.white,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
-                // Description text below the button
-                Padding(
-                  padding: const EdgeInsets.only(top: 8.0),
-                  child: Text(
-                    flashCardDescriptions[index],
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.black.withOpacity(0.7),
-                      fontWeight: FontWeight.bold,
                     ),
-                    textAlign: TextAlign.center,
                   ),
-                ),
-              ],
+                );
+              },
             ),
-          );
-        }),
+          ),
+          Positioned(
+            bottom: 20,
+            right: 10,
+            child: Container(
+              padding: EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.9),
+                borderRadius: BorderRadius.circular(8),
+                boxShadow: [
+                  BoxShadow(color: Colors.black26, blurRadius: 4),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: List.generate(cardColors.length, (index) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4.0),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 16,
+                          height: 16,
+                          color: cardColors[index],
+                        ),
+                        SizedBox(width: 6),
+                        Text(
+                          flashCardDescriptions[index],
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

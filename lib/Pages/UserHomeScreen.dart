@@ -355,73 +355,78 @@ void _logoutAndRedirectToLogin(BuildContext context) {
                   ),
                 ),
                 SizedBox(height: 10),
-            ElevatedButton(
-  onPressed: () async {
-    try {
-      // Fetch the count of documents from the SmartTrafficInputOneCollection
-      final snapshot = await FirebaseFirestore.instance
-          .collection('SmartTrafficInputOneCollection')
-          .get();
-      final totalQuestions = snapshot.size;  // Get the count of documents
+              ElevatedButton(
+     onPressed: () async {
+  try {
+    final snapshot = await FirebaseFirestore.instance
+        .collection('SmartTrafficInputOneCollection')
+        .get();
+    final totalQuestions = snapshot.size;
 
-      // Show the dialog to select the number of questions
-      final selectedCount = await showDialog<int>(
-        context: context,
-        builder: (context) => DynamicQuestionSelectDialog(totalQuestions: totalQuestions), // Pass the totalQuestions
-      );
+ final selectedRange = await showDialog<Map<String, int>>(
+  context: context,
+  builder: (context) => DynamicQuestionSelectDialog(
+    totalQuestions: totalQuestions,
+  ),
+);
 
-      // If a count is selected, navigate to the next page with the selected number of questions
-      if (selectedCount != null) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => UserExerciseOne(selectedQuestions: selectedCount), // Pass the selected count
-          ),
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error fetching total questions: $e')),
-      );
-    }
-  },
-  style: ElevatedButton.styleFrom(
-    backgroundColor: Colors.white, // White background for this button
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(10),
+if (selectedRange != null) {
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => UserExerciseOne(
+        startIndex: selectedRange['start']!,
+        endIndex: selectedRange['end']!,
+      ),
     ),
-    elevation: 2, // Adds shadow to give a slight raised effect
-  ),
-  child: Padding(
-    padding: const EdgeInsets.all(7),
-    child: Row(
-      children: [
-        // Icon for the button
-        Image.asset('assets/1.png', width: 36, height: 36),
-        SizedBox(width: 10),
-        Text(
-          "Нэр томьёоны тодорхойлолт",
-          style: TextStyle(
-            color: Colors.black, // Text color for white button
-            fontWeight: FontWeight.bold,
-            fontSize: 12,
+  );
+}
+
+
+
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Error fetching total questions: $e')),
+    );
+  }
+},
+
+      style: ElevatedButton.styleFrom(
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
+      ),
+      elevation: 2,
+    ),
+    child: Padding(
+      padding: const EdgeInsets.all(7),
+      child: Row(
+        children: [
+          Image.asset('assets/1.png', width: 36, height: 36),
+          const SizedBox(width: 10),
+          const Text(
+            "Нэр томьёоны тодорхойлолт",
+            style: TextStyle(
+              color: Colors.black,
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+            ),
           ),
-        ),
-        Spacer(),
-        // Next icon at the end of the button
-        Image.asset('assets/next.png', width: 24, height: 24),
-      ],
+          const Spacer(),
+          Image.asset('assets/next.png', width: 24, height: 24),
+        ],
+      ),
     ),
   ),
-),
-SizedBox(height: 5),
-        ElevatedButton(
-  onPressed: () async {
-    try {
-      // Fetch the count of documents from the SmartTrafficInputOneCollection
-      final snapshot = await FirebaseFirestore.instance
-          .collection('SmartTrafficInputTwoCollection')
-          .get();
+
+  SizedBox(height: 5),
+  ElevatedButton(
+    onPressed: () async {
+      try {
+        // Fetch the count of documents from the SmartTrafficInputOneCollection
+        final snapshot = await FirebaseFirestore.instance
+            .collection('SmartTrafficInputTwoCollection')
+            .get();
       final totalQuestions = snapshot.size;  // Get the count of documents
 
       // Show the dialog to select the number of questions
@@ -580,7 +585,10 @@ SizedBox(height: 8,),
         Image.asset('assets/5.png', width: 36, height: 36),
         SizedBox(width: 10),
         Text(
-          "усгай дуут болон гэрлэн дохио ажиллулсан тээврийн хэрэгслийн хөдөлгөөн",
+         
+              """Тусгай дуут болон гэрлэн дохио
+ажилуулсан тээврийн хэрэгслийн
+хөдөлгөөн""",
           style: TextStyle(
             color: Colors.black, // Text color for white button
             fontWeight: FontWeight.bold,

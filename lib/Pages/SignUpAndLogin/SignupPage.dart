@@ -12,67 +12,64 @@ class SignupPage extends StatefulWidget {
 
 class _SignupPageState extends State<SignupPage> {
   final _formKey = GlobalKey<FormState>();
+  final usernameController = TextEditingController();
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
 
   bool isLoading = false;
   bool _obscurePassword = true;
 
-  // Function to register the user using email and password
   Future<void> registerUser() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => isLoading = true);
 
     try {
-      final email = emailController.text.trim(); // Get email input
-      final password = passwordController.text.trim(); // Get password input
+      final username = usernameController.text.trim();
+      final email = emailController.text.trim();
+      final password = passwordController.text.trim();
 
       final auth = FirebaseAuth.instance;
-      
-      try {
-        // Attempt to create a new user using the email and password
-        UserCredential userCredential = await auth.createUserWithEmailAndPassword(
-            email: email, password: password);
 
-        // Save additional user data (like phone number) in Firestore if needed
-        await FirebaseFirestore.instance.collection("UserList").doc(userCredential.user!.uid).set({
-          "Email": email,
-          "Password": password,
-        });
+      UserCredential userCredential =
+          await auth.createUserWithEmailAndPassword(email: email, password: password);
 
-        // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Амжилттай бүртгэгдлээ!")),
+      // Save user info to Firestore
+      await FirebaseFirestore.instance
+          .collection("UserList")
+          .doc(userCredential.user!.uid)
+          .set({
+        "Username": username,
+        "Email": email,
+        "Password": password,
+      });
 
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Амжилттай бүртгэгдлээ!")),
+      );
+
+      usernameController.clear();
+      emailController.clear();
+      passwordController.clear();
+
+      Future.delayed(const Duration(seconds: 1), () {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const LoginPage()),
         );
-
-        // Clear text fields
-        emailController.clear();
-        passwordController.clear();
-
-        // Navigate to LoginPage after registration
-        Future.delayed(const Duration(seconds: 1), () {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const LoginPage()),
-          );
-        });
-      } on FirebaseAuthException catch (e) {
-        if (e.code == 'email-already-in-use') {
-          // Handle the specific error for email already in use
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Энэ имэйл хаяг аль хэдийн бүртгэгдсэн байна!")),
-
-          );
-        } else {
-          // General Firebase authentication error handling
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Алдаа: ${e.message}")));
-        }
+      });
+    } on FirebaseAuthException catch (e) {
+      String errorMessage = "Алдаа: ${e.message}";
+      if (e.code == 'email-already-in-use') {
+        errorMessage = "Энэ имэйл хаяг аль хэдийн бүртгэгдсэн байна!";
       }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(errorMessage)),
+      );
     } catch (e) {
-      // Catch any other errors
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Алдаа: ${e.toString()}")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Алдаа: ${e.toString()}")),
+      );
     } finally {
       setState(() => isLoading = false);
     }
@@ -103,35 +100,53 @@ class _SignupPageState extends State<SignupPage> {
                 child: Icon(Icons.person_add, size: 40, color: Colors.white),
               ),
               const SizedBox(height: 20),
+
+              // Username input
+              TextFormField(
+                controller: usernameController,
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(
+                  prefixIcon: Icon(Icons.person, color: Colors.white),
+                  labelText: 'Username',
+                  labelStyle: TextStyle(color: Colors.white70),
+                  enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white38)),
+                  focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white)),
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Нэрээ оруулна уу';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 20),
+
               // Email input
               TextFormField(
                 controller: emailController,
                 keyboardType: TextInputType.emailAddress,
                 style: const TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  prefixIcon: const Icon(Icons.email, color: Colors.white),
+                decoration: const InputDecoration(
+                  prefixIcon: Icon(Icons.email, color: Colors.white),
                   labelText: 'Email',
-                  labelStyle: const TextStyle(color: Colors.white70),
-                  enabledBorder: const UnderlineInputBorder(borderSide: BorderSide(color: Colors.white38)),
-                  focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: Colors.white)),
+                  labelStyle: TextStyle(color: Colors.white70),
+                  enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white38)),
+                  focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white)),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Энгийн имэйл хаяг оруулна уу';
+                    return 'Имэйл хаяг оруулна уу';
                   }
-                  // Check if the email format is correct
                   String pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$';
-                  RegExp regExp = RegExp(pattern);
-                  if (!regExp.hasMatch(value)) {
-                    return 'Энэ бол зөв имэйл хаяг биш';
+                  if (!RegExp(pattern).hasMatch(value)) {
+                    return 'Зөв имэйл хаяг биш байна';
                   }
                   return null;
                 },
               ),
-
               const SizedBox(height: 20),
 
-              // Password input with visibility toggle
+              // Password input
               TextFormField(
                 controller: passwordController,
                 obscureText: _obscurePassword,
@@ -165,10 +180,9 @@ class _SignupPageState extends State<SignupPage> {
                   return null;
                 },
               ),
-
               const SizedBox(height: 30),
 
-              // Sign up button
+              // Sign Up Button
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.white,
@@ -180,10 +194,9 @@ class _SignupPageState extends State<SignupPage> {
                     ? const CircularProgressIndicator()
                     : const Text("SIGN UP", style: TextStyle(color: Colors.deepPurple)),
               ),
-
               const SizedBox(height: 20),
 
-              // Login button to go back to login page
+              // Login Navigation
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.deepPurple,
@@ -198,7 +211,7 @@ class _SignupPageState extends State<SignupPage> {
                 },
                 child: const Text("Already have an account? Login", style: TextStyle(color: Colors.white)),
               ),
-            ]), 
+            ]),
           ),
         ),
       ),

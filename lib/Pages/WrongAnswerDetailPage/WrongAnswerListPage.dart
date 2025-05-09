@@ -111,7 +111,7 @@ class WrongAnswerListPage extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4.0),
             child: Text(
-              "Механикжсан тээврийн хэрэгслийн-20 ангилал",
+              "Механикжсан тээврийн хэрэгслийн ангилал",
               style: TextStyle(
                 color: Colors.black,
                 fontWeight: FontWeight.bold,
@@ -196,7 +196,7 @@ ElevatedButton(
         Text(
               """Тусгай дуут болон гэрлэн дохио
 ажилуулсан тээврийн хэрэгслийн
-хөдөлгөөн-10""",
+хөдөлгөөн""",
           style: TextStyle(
             color: Colors.black, // Text color for white button
             fontWeight: FontWeight.bold,
@@ -721,7 +721,7 @@ SizedBox(height: 8,),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4.0),
             child: Text(
-              "Гадна талын гэрэлтүүлэх хэрэгсэл-10",
+              "Гадна талын гэрэлтүүлэх хэрэгсэл",
               style: TextStyle(
                 color: Colors.black,
                 fontWeight: FontWeight.bold,
@@ -851,7 +851,7 @@ SizedBox(height: 8,),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4.0),
             child: Text(
-              "Механикжсан тээврийн хэрэгслийг чирэх-10",
+              "Механикжсан тээврийн хэрэгслийг чирэх",
               style: TextStyle(
                 color: Colors.black,
                 fontWeight: FontWeight.bold,
@@ -940,7 +940,7 @@ SizedBox(height: 8,),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4.0),
             child: Text(
-              "Тээврийн хэрэгслийн эвдрэл, гэмтэл, зөрчил-10",
+              "Тээврийн хэрэгслийн эвдрэл, гэмтэл, зөрчил",
               style: TextStyle(
                 color: Colors.black,
                 fontWeight: FontWeight.bold,
@@ -989,7 +989,7 @@ SizedBox(height: 8,),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4.0),
             child: Text(
-              "Тээврийн хэрэгслийг аюулгүй холоодох онол-10",
+              "Тээврийн хэрэгслийг аюулгүй холоодох онол",
               style: TextStyle(
                 color: Colors.black,
                 fontWeight: FontWeight.bold,

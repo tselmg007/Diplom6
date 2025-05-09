@@ -1,54 +1,146 @@
 import 'package:flutter/material.dart';
 
-class DynamicQuestionSelectDialog extends StatelessWidget {
+class DynamicQuestionSelectDialog extends StatefulWidget {
   final int totalQuestions;
 
-  const DynamicQuestionSelectDialog({Key? key, required this.totalQuestions}) : super(key: key);
+  const DynamicQuestionSelectDialog({
+    Key? key,
+    required this.totalQuestions,
+  }) : super(key: key);
 
-  List<int> generateOptions() {
-    int step = (totalQuestions / 4).floor();
-    return [
-      step,
-      step * 2,
-      step * 3,
-      totalQuestions,
-    ];
+  @override
+  State<DynamicQuestionSelectDialog> createState() =>
+      _DynamicQuestionSelectDialogState();
+}
+
+class _DynamicQuestionSelectDialogState
+    extends State<DynamicQuestionSelectDialog> {
+  List<Map<String, int>> ranges = [];
+  List<Map<String, int>> selectedRanges = [];
+
+  @override
+  void initState() {
+    super.initState();
+    ranges = generateRanges();
+
+    // 🟢 Add "All" as a virtual range at the top
+    ranges.insert(0, {'start': 1, 'end': widget.totalQuestions});
+  }
+
+  List<Map<String, int>> generateRanges() {
+    List<Map<String, int>> result = [];
+    int step = widget.totalQuestions <= 40 ? 10 : 20;
+    int currentStart = 1;
+
+    while (currentStart <= widget.totalQuestions) {
+      int end = currentStart + step - 1;
+      if (end > widget.totalQuestions) end = widget.totalQuestions;
+      result.add({'start': currentStart, 'end': end});
+      currentStart = end + 1;
+    }
+
+    return result;
+  }
+
+  bool isSelected(Map<String, int> range) {
+    return selectedRanges.any((r) =>
+        r['start'] == range['start'] && r['end'] == range['end']);
+  }
+
+  void toggleRange(Map<String, int> range) {
+    setState(() {
+      if (isSelected(range)) {
+        selectedRanges.removeWhere((r) =>
+            r['start'] == range['start'] && r['end'] == range['end']);
+      } else {
+        // Хэрэв "Бүх асуулт" сонгогдвол бусдыг цэвэрлэнэ
+        if (range['start'] == 1 && range['end'] == widget.totalQuestions) {
+          selectedRanges = [range];
+        } else {
+          // Хэрэв бусад багц сонговол "Бүх асуулт"-ыг арилгана
+          selectedRanges.removeWhere((r) =>
+              r['start'] == 1 && r['end'] == widget.totalQuestions);
+          selectedRanges.add(range);
+        }
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final options = generateOptions();
-
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
-        padding: const EdgeInsets.all(15),
+        padding: const EdgeInsets.all(16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              'Сонгох асуултын тоо',
+            const Text(
+              'Асуултын багц сонгох',
               style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
             ),
-            SizedBox(height: 10),
-            // Display options as buttons
-            for (var count in options)
-              Column(
-                children: [
-                  ElevatedButton(
-                    onPressed: () => Navigator.pop(context, count), // Return selected count
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: Size(double.infinity, 50),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(5),
-                      ),
-                      backgroundColor: Colors.white,
+            const SizedBox(height: 12),
+
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: ranges.map((range) {
+                final selected = isSelected(range);
+                final isAll = range['start'] == 1 &&
+                    range['end'] == widget.totalQuestions;
+
+                return GestureDetector(
+                  onTap: () => toggleRange(range),
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    decoration: BoxDecoration(
+                      color:
+                          selected ? Colors.blue[100] : Colors.grey.shade100,
+                      border: Border.all(
+                          color: selected ? Colors.blue : Colors.grey),
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Text('$count асуулт'),
+                    child: Text(
+                      isAll
+                          ? 'Бүх асуулт'
+                          : '${range['start']} - ${range['end']}',
+                      style: TextStyle(
+                          fontWeight: FontWeight.w500,
+                          color:
+                              selected ? Colors.blue[900] : Colors.grey[800]),
+                    ),
                   ),
-                  SizedBox(height: 5),
-                ],
+                );
+              }).toList(),
+            ),
+
+            const SizedBox(height: 20),
+
+            ElevatedButton.icon(
+              icon: const Icon(Icons.play_arrow),
+              label: const Text("Эхлүүлэх"),
+              onPressed: () {
+                if (selectedRanges.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                    content: Text('Та багц сонгоно уу!'),
+                  ));
+                  return;
+                }
+
+                final start = selectedRanges.first['start']!;
+                final end = selectedRanges.last['end']!;
+                Navigator.pop(context, {'start': start, 'end': end});
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue,
+                foregroundColor: Colors.white,
+                padding:
+                    const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
               ),
+            ),
           ],
         ),
       ),

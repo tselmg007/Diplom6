@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart'; // Import FirebaseAuth
 import 'package:traffic/Pages/SignUpAndLogin/SignupPage.dart';
 import 'package:traffic/Pages/BottomNavigationBarChange.dart';
+import 'package:traffic/Pages/ReminderSheetPage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginPage extends StatefulWidget {
@@ -73,7 +74,7 @@ class _LoginPageState extends State<LoginPage> {
         await FirebaseFirestore.instance.collection("UserList").doc(userCredential.user!.uid).set({
           "Email": email,
           "Password": password,
-        });
+       }, SetOptions(merge: true));
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Амжилттай нэвтэрлээ!")),
@@ -81,19 +82,23 @@ class _LoginPageState extends State<LoginPage> {
 
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const BottomNavigationBarChange()),
+          MaterialPageRoute(builder: (context) =>  ReminderSheetPage()),
         );
-      } on FirebaseAuthException catch (e) {
-        // Handle FirebaseAuthException errors
-        if (e.code == 'user-not-found' || e.code == 'wrong-password') {
-          // If FirebaseAuth fails, check the Firestore UserList collection
-          await _checkUserInFirestore(email, password);
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Нэвтрэхэд алдаа гарлаа: ${e.message}")),
-          );
-        }
-      }
+     } on FirebaseAuthException catch (e) {
+  if (e.code == 'user-not-found' || e.code == 'wrong-password') {
+    await _checkUserInFirestore(email, password);
+  } else if (e.code == 'invalid-credential' || e.code == 'invalid-login-credentials') {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Нууц үг шинэчлэгдсэн байж болзошгүй. Шинэ нууц үгээ шалгана уу?"),
+      ),
+    );
+  } else {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Нэвтрэхэд алдаа гарлаа: ${e.message}")),
+    );
+  }
+}
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Нэвтрэхэд алдаа гарлаа: ${e.toString()}")),
