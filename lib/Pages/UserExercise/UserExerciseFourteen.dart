@@ -3,9 +3,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class UserExerciseFourteen extends StatefulWidget {
-  final int selectedQuestions;
+  final int startIndex;
+  final int endIndex;
 
-  const UserExerciseFourteen({Key? key, required this.selectedQuestions}) : super(key: key);
+  const UserExerciseFourteen({Key? key, required this.startIndex, required this.endIndex}) : super(key: key);
 
   @override
   State<UserExerciseFourteen> createState() => _UserExerciseState();
@@ -17,43 +18,89 @@ class _UserExerciseState extends State<UserExerciseFourteen> {
   List<Map<String, dynamic>> quizList = [];
   String? selectedOption;
   bool isAnswerSelected = false;
+  bool showOnlyWrong = false;
+  bool hasSavedWrongAnswer = false;
+  bool isQuestionSaved = false;
+  List<bool> isQuestionSavedList = [];
 
   @override
-  void initState() {
-    super.initState();
-    fetchQuizzes();
+void initState() {
+  super.initState();
+  fetchQuizzes();
   }
 
   Future<void> fetchQuizzes() async {
-    try {
-      final snapshot = await FirebaseFirestore.instance
-          .collection('SmartTrafficInputFourteenCollection')
-          .orderBy('CreatedAt')
-          .get();
+  try {
+    final snapshot = await FirebaseFirestore.instance
+        .collection('SmartTrafficInputFourteenCollection')
+        .orderBy('CreatedAt')
+        .get();
 
-      setState(() {
-        quizList = snapshot.docs.map((doc) => doc.data()).toList();
-      });
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error fetching quizzes: $e')),
-      );
+    final allQuizzes = snapshot.docs.map((doc) => doc.data()).toList();
+    final selectedRange = allQuizzes.sublist(
+      widget.startIndex - 1,
+      widget.endIndex > allQuizzes.length ? allQuizzes.length : widget.endIndex,
+    );
+
+    setState(() {
+      quizList = selectedRange;
+      isQuestionSavedList = List.generate(quizList.length, (_) => false);
+    });
+
+    await checkIfQuestionIsSaved(); // <<== CHECK SKIP AFTER QUIZ FETCHED
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Error fetching quizzes: $e')),
+    );
+  }
+}
+
+ Future<void> checkIfQuestionIsSaved() async {
+  final userUID = FirebaseAuth.instance.currentUser?.uid;
+  if (userUID != null && quizList.isNotEmpty) {
+    final quiz = quizList[currentQuestionIndex];
+    final doc = await FirebaseFirestore.instance
+        .collection('SkipQuizCollection')
+        .doc(quiz['questionId'])
+        .get();
+
+    setState(() {
+      isQuestionSavedList[currentQuestionIndex] = doc.exists && doc.data()?['userUID'] == userUID;
+      showOnlyWrong = isQuestionSavedList[currentQuestionIndex];
+    });
+  }
+}
+
+
+  Future<void> saveToFirestore(String collectionName, Map<String, dynamic> quizData) async {
+    final userUID = FirebaseAuth.instance.currentUser?.uid;
+    if (userUID != null && quizData['questionId'] != null) {
+      try {
+        final dataToSave = Map<String, dynamic>.from(quizData);
+        dataToSave['userUID'] = userUID;
+        await FirebaseFirestore.instance
+            .collection(collectionName)
+            .doc(quizData['questionId'])
+            .set(dataToSave, SetOptions(merge: true));
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error saving to $collectionName: $e')),
+        );
+      }
     }
   }
 
-  Future<void> saveWrongAnswerToFirestore(Map<String, dynamic> quizData) async {
+  Future<void> saveWrongAnswer(Map<String, dynamic> quizData) async {
     final userUID = FirebaseAuth.instance.currentUser?.uid;
-
-    if (userUID != null) {
+    if (userUID != null && quizData['questionId'] != null) {
       try {
-        final updatedData = Map<String, dynamic>.from(quizData);
-        updatedData['userUID'] = userUID;
-        updatedData['wrongAttempts'] = FieldValue.increment(1);
-
+        final data = Map<String, dynamic>.from(quizData);
+        data['userUID'] = userUID;
+        data['wrongAttempts'] = FieldValue.increment(1);
         await FirebaseFirestore.instance
             .collection('WrongAnswerTestFourteenCollection')
             .doc(quizData['questionId'])
-            .set(updatedData, SetOptions(merge: true));
+            .set(data, SetOptions(merge: true));
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error saving wrong answer: $e')),
@@ -62,110 +109,137 @@ class _UserExerciseState extends State<UserExerciseFourteen> {
     }
   }
 
-  Future<void> checkWrongAttemptsAndSaveToFlashcards(Map<String, dynamic> currentQuiz) async {
-    try {
-      final snapshot = await FirebaseFirestore.instance
-          .collection('WrongAnswerTestFourteenCollection')
-          .doc(currentQuiz['questionId'])
-          .get();
+  Future<void> checkWrongAttempts(Map<String, dynamic> quizData) async {
+    final doc = await FirebaseFirestore.instance
+        .collection('WrongAnswerTestFourteenCollection')
+        .doc(quizData['questionId'])
+        .get();
 
-      if (snapshot.exists) {
-        final data = snapshot.data();
-        final wrongAttempts = data?['wrongAttempts'] ?? 0;
+    if (doc.exists) {
+      final attempts = (doc.data()?['wrongAttempts'] ?? 0) as int;
+      String collection = '';
 
-        String targetCollection = '';
-        if (wrongAttempts == 3) {
-          targetCollection = 'YellowFlashCardCollection';
-        } else if (wrongAttempts > 3 && wrongAttempts <= 5) {
-          targetCollection = 'OrangeFlashCardCollection';
-        } else if (wrongAttempts > 5) {
-          targetCollection = 'RedFlashCardCollection';
-        }
-
-        if (targetCollection.isNotEmpty) {
-          await moveToFlashcardCollection(currentQuiz, targetCollection);
-        }
+      if (attempts == 3) {
+        collection = 'YellowFlashCardCollection';
+      } else if (attempts > 3 && attempts <= 5) {
+        collection = 'OrangeFlashCardCollection';
+      } else if (attempts > 5) {
+        collection = 'RedFlashCardCollection';
       }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error checking wrong attempts: $e')),
-      );
-    }
-  }
 
-  Future<void> moveToFlashcardCollection(Map<String, dynamic> quizData, String targetCollection) async {
-    final userUID = FirebaseAuth.instance.currentUser?.uid;
+      if (collection.isNotEmpty) {
+        await saveToFirestore(collection, quizData);
 
-    if (userUID != null) {
-      try {
-        quizData['userUID'] = userUID;
-        String questionId = quizData['questionId'];
-
-        await FirebaseFirestore.instance
-            .collection(targetCollection)
-            .doc(questionId)
-            .set(quizData, SetOptions(merge: true));
-
-        final collections = ['YellowFlashCardCollection', 'OrangeFlashCardCollection', 'RedFlashCardCollection'];
-        for (var collection in collections) {
-          if (collection != targetCollection) {
-            await FirebaseFirestore.instance.collection(collection).doc(questionId).delete();
+        for (final other in ['YellowFlashCardCollection', 'OrangeFlashCardCollection', 'RedFlashCardCollection']) {
+          if (other != collection) {
+            await FirebaseFirestore.instance.collection(other).doc(quizData['questionId']).delete();
           }
         }
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error moving to flashcard collection: $e')),
-        );
       }
     }
   }
 
-  void nextQuestion() async {
-    final currentQuiz = quizList[currentQuestionIndex];
-    final correctAnswer = currentQuiz['CorrectAnswer'];
+Future<void> onCheckboxChanged(bool? val) async {
+  final userUID = FirebaseAuth.instance.currentUser?.uid;
+  final quiz = quizList[currentQuestionIndex];
 
-    if (selectedOption != null && selectedOption == correctAnswer) {
-      correctAnswersCount++;
+  if (val == true) {
+    await saveToFirestore('SkipQuizCollection', quiz);
+    setState(() {
+      isQuestionSavedList[currentQuestionIndex] = true;
+      showOnlyWrong = true;
+    });
+  } else {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text("Баталгаажуулалт"),
+        content: Text("Энэ асуултыг алгасах жагсаалтаас устгах уу?"),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text("Үгүй")),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: Text("Тийм")),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await FirebaseFirestore.instance
+          .collection('SkipQuizCollection')
+          .doc(quiz['questionId'])
+          .delete();
+      setState(() {
+        isQuestionSavedList[currentQuestionIndex] = false;
+        showOnlyWrong = false;
+      });
+    }
+  }
+}
+
+
+  Future<void> nextQuestion({bool skipped = false}) async {
+    final quiz = quizList[currentQuestionIndex];
+    final correctAnswer = quiz['CorrectAnswer'];
+
+    if (skipped) {
+      final doc = await FirebaseFirestore.instance
+          .collection('ComplicatedQuestionCollection')
+          .doc(quiz['questionId'])
+          .get();
+      
+      if (doc.exists) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Энэ асуулт өмнө нь хадгалагдсан байна")),
+        );
+        return;
+      }
+      
+      await saveToFirestore('ComplicatedQuestionCollection', quiz);
+    } else {
+      final isCorrect = selectedOption == correctAnswer;
+
+      if (!isCorrect && !hasSavedWrongAnswer && !showOnlyWrong) {
+        await saveWrongAnswer(quiz);
+        await checkWrongAttempts(quiz);
+      }
+
+      if (!isCorrect && selectedOption == null && !showOnlyWrong) {
+        await saveWrongAnswer(quiz);
+        await checkWrongAttempts(quiz);
+      } else if (isCorrect) {
+        correctAnswersCount++;
+      }
     }
 
-    await checkWrongAttemptsAndSaveToFlashcards(currentQuiz);
 
-    if (currentQuestionIndex < widget.selectedQuestions - 1) {
+    if (currentQuestionIndex < quizList.length - 1) {
       setState(() {
         currentQuestionIndex++;
         selectedOption = null;
         isAnswerSelected = false;
+        hasSavedWrongAnswer = false;
       });
+       await checkIfQuestionIsSaved(); 
     } else {
-      showFinalResult();  // This will show the result dialog at the end of the quiz
+      showFinalResult();
     }
   }
 
   void showFinalResult() {
     showDialog(
       context: context,
-      barrierDismissible: false,  // Prevent dialog from being dismissed by tapping outside
+      barrierDismissible: false,
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-        title: const Text("Дасгал ажиллаж дууслаа. 🎉"),
+        title: const Text("Дасгал дууслаа 🎉"),
         content: Text(
-          "Та ${quizList.length}-с $correctAnswersCount зөв хариулсан байна. "
-          "Алдсан ${quizList.length - correctAnswersCount} асуулт тухайн дэд бүлгийн алдсан тестийн санд бүртгэгдлээ.",
+          "Та ${quizList.length}-аас $correctAnswersCount зөв хариуллаа. "
+          "Алдаатай болон алгассан асуулт хадгалагдлаа.",
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         actions: [
           TextButton(
-            onPressed: () {
-              // Close only the dialog, not the page
-              Navigator.of(context).pop(); // Dismiss the dialog
-            },
-            child: const Text(
-              'OK',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -175,26 +249,31 @@ class _UserExerciseState extends State<UserExerciseFourteen> {
   @override
   Widget build(BuildContext context) {
     if (quizList.isEmpty) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    final currentQuiz = quizList[currentQuestionIndex];
-    final question = currentQuiz['Question'] ?? 'Асуулт олдсонгүй';
-    final imageUrl = currentQuiz['Image'] ?? '';
-    final answers = List<String>.generate(5, (i) => currentQuiz['Answer${i + 1}'] ?? '')
-        .where((ans) => ans.isNotEmpty)
-        .toList();
+    final quiz = quizList[currentQuestionIndex];
+    final question = quiz['Question'] ?? 'Асуулт алга';
+    final imageUrl = quiz['Image'] ?? '';
+    final answers = List.generate(5, (i) => quiz['Answer${i + 1}'] ?? '').where((e) => e.isNotEmpty).toList();
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          "Асуулт ${currentQuestionIndex + 1}/${widget.selectedQuestions}",
-          style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 15),
-        ),
+        title: Text("Асуулт ${widget.startIndex + currentQuestionIndex}/${widget.endIndex}",
+            style: const TextStyle(color: Colors.black)),
         backgroundColor: Colors.blue[100],
         iconTheme: const IconThemeData(color: Colors.black),
+        actions: [
+          Row(
+            children: [
+              const Text("Эргэлзсэн асуулт", style: TextStyle(fontSize: 13, color: Colors.black)),
+              Checkbox(
+  value: isQuestionSavedList.isNotEmpty ? isQuestionSavedList[currentQuestionIndex] : false,
+  onChanged: onCheckboxChanged,
+)
+            ],
+          )
+        ],
       ),
       body: Stack(
         children: [
@@ -204,94 +283,70 @@ class _UserExerciseState extends State<UserExerciseFourteen> {
               decoration: BoxDecoration(
                 color: Colors.blue[100],
                 borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 8,
-                    spreadRadius: 2,
-                  ),
-                ],
               ),
               padding: const EdgeInsets.all(20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    question,
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 10),
+                  Text(question, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                   if (imageUrl.isNotEmpty && imageUrl.startsWith("http"))
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(15),
-                      child: Image.network(
-                        imageUrl,
-                        width: MediaQuery.of(context).size.width * 0.8,
-                        height: 170,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => const SizedBox(),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(15),
+                        child: Image.network(imageUrl, height: 170, fit: BoxFit.cover),
                       ),
                     ),
-                  const SizedBox(height: 20),
-                  ...List.generate(answers.length, (index) {
-                    final answer = answers[index];
+                  const SizedBox(height: 10),
+                  ...answers.map((answer) {
                     final isSelected = selectedOption == answer;
-                    final isCorrect = answer == currentQuiz['CorrectAnswer'];
+                    final isCorrect = answer == quiz['CorrectAnswer'];
+                    Color color = Colors.white;
 
-                    Color buttonColor = Colors.white;
                     if (selectedOption != null) {
-                      if (isSelected && isCorrect) {
-                        buttonColor = Colors.greenAccent;
-                      } else if (isSelected && !isCorrect) {
-                        buttonColor = Colors.redAccent;
-                      }
+                      if (isSelected && isCorrect) color = Colors.greenAccent;
+                      else if (isSelected && !isCorrect) color = Colors.redAccent;
                     }
 
                     return Padding(
-                      padding: const EdgeInsets.only(bottom: 5),
+                      padding: const EdgeInsets.symmetric(vertical: 5),
                       child: ElevatedButton(
                         onPressed: !isAnswerSelected
-                            ? () {
+                            ? () async {
                                 setState(() {
                                   selectedOption = answer;
                                   isAnswerSelected = true;
                                 });
 
-                                final isCorrect = selectedOption == currentQuiz['CorrectAnswer'];
+                                final correct = answer == quiz['CorrectAnswer'];
+
+                                if (!correct) {
+                                  await saveWrongAnswer(quiz);
+                                  await checkWrongAttempts(quiz);
+                                  hasSavedWrongAnswer = true;
+                                }
 
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Text(
-                                      isCorrect
+                                      correct
                                           ? "🎉 Зөв хариулт!"
-                                          : "❌ Буруу хариулт. Зөв хариулт: ${currentQuiz['CorrectAnswer']}",
+                                          : "❌ Буруу хариулт. Зөв: ${quiz['CorrectAnswer']}",
                                     ),
-                                    backgroundColor: isCorrect ? Colors.green : Colors.redAccent,
+                                    backgroundColor: correct ? Colors.green : Colors.red,
                                   ),
                                 );
-
-                                if (!isCorrect) {
-                                  saveWrongAnswerToFirestore(currentQuiz);
-                                }
                               }
                             : null,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: buttonColor,
+                          backgroundColor: color,
                           foregroundColor: Colors.black,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                           minimumSize: const Size(double.infinity, 45),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
                         ),
                         child: Align(
                           alignment: Alignment.centerLeft,
-                          child: Text(
-                            answer,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                          ),
+                          child: Text(answer, style: const TextStyle(fontWeight: FontWeight.bold)),
                         ),
                       ),
                     );
@@ -310,54 +365,46 @@ class _UserExerciseState extends State<UserExerciseFourteen> {
                 if (currentQuestionIndex > 0)
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: () {
-                        setState(() {
-                          currentQuestionIndex--;
-                          selectedOption = null;
-                          isAnswerSelected = false;
-                        });
-                      },
+                      onPressed: () => setState(() {
+                        currentQuestionIndex--;
+                        selectedOption = null;
+                        isAnswerSelected = false;
+                      }),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.blueAccent,
-                        padding: const EdgeInsets.symmetric(vertical: 15),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(15.0),
-                        ),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
                       ),
-                      child: const Text(
-                        'Буцах',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                      child: const Text('Буцах', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                     ),
                   ),
                 if (currentQuestionIndex > 0) const SizedBox(width: 10),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: isAnswerSelected ? nextQuestion : null,
+                    onPressed: () => nextQuestion(skipped: true),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orangeAccent,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                    ),
+                    child: const Text('Алгасах', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: (isAnswerSelected || showOnlyWrong) ? () => nextQuestion(skipped: false) : null,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blueAccent,
-                      padding: const EdgeInsets.symmetric(vertical: 15),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(15.0),
-                      ),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
                     ),
                     child: Text(
-                      currentQuestionIndex == widget.selectedQuestions - 1 ? 'Дуусгах' : 'Дараа',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      currentQuestionIndex == quizList.length - 1 ? 'Дуусгах' : 'Дараа',
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                     ),
                   ),
                 ),
               ],
             ),
-          ),
+          )
         ],
       ),
     );

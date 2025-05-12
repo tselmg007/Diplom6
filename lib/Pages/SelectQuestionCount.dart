@@ -21,10 +21,18 @@ class _DynamicQuestionSelectDialogState
   @override
   void initState() {
     super.initState();
-    ranges = generateRanges();
 
-    // 🟢 Add "All" as a virtual range at the top
-    ranges.insert(0, {'start': 1, 'end': widget.totalQuestions});
+    // ✅ If 10 or fewer questions, only show "All Questions"
+    if (widget.totalQuestions <= 10) {
+      ranges = [
+        {'start': 1, 'end': widget.totalQuestions}
+      ];
+    } else {
+      ranges = generateRanges();
+
+      // 🟢 Add "All" as the first range
+      ranges.insert(0, {'start': 1, 'end': widget.totalQuestions});
+    }
   }
 
   List<Map<String, int>> generateRanges() {
@@ -53,11 +61,11 @@ class _DynamicQuestionSelectDialogState
         selectedRanges.removeWhere((r) =>
             r['start'] == range['start'] && r['end'] == range['end']);
       } else {
-        // Хэрэв "Бүх асуулт" сонгогдвол бусдыг цэвэрлэнэ
+        // If "All Questions" is selected, clear others
         if (range['start'] == 1 && range['end'] == widget.totalQuestions) {
           selectedRanges = [range];
         } else {
-          // Хэрэв бусад багц сонговол "Бүх асуулт"-ыг арилгана
+          // Remove "All Questions" if selecting others
           selectedRanges.removeWhere((r) =>
               r['start'] == 1 && r['end'] == widget.totalQuestions);
           selectedRanges.add(range);
@@ -69,7 +77,7 @@ class _DynamicQuestionSelectDialogState
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -77,10 +85,9 @@ class _DynamicQuestionSelectDialogState
           children: [
             const Text(
               'Асуултын багц сонгох',
-              style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
-
             Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -92,11 +99,10 @@ class _DynamicQuestionSelectDialogState
                 return GestureDetector(
                   onTap: () => toggleRange(range),
                   child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 10),
                     decoration: BoxDecoration(
-                      color:
-                          selected ? Colors.blue[100] : Colors.grey.shade100,
+                      color: selected ? Colors.blue[100] : Colors.grey.shade100,
                       border: Border.all(
                           color: selected ? Colors.blue : Colors.grey),
                       borderRadius: BorderRadius.circular(8),
@@ -106,17 +112,15 @@ class _DynamicQuestionSelectDialogState
                           ? 'Бүх асуулт'
                           : '${range['start']} - ${range['end']}',
                       style: TextStyle(
-                          fontWeight: FontWeight.w500,
-                          color:
-                              selected ? Colors.blue[900] : Colors.grey[800]),
+                        fontWeight: FontWeight.w500,
+                        color: selected ? Colors.blue[900] : Colors.grey[800],
+                      ),
                     ),
                   ),
                 );
               }).toList(),
             ),
-
             const SizedBox(height: 20),
-
             ElevatedButton.icon(
               icon: const Icon(Icons.play_arrow),
               label: const Text("Эхлүүлэх"),

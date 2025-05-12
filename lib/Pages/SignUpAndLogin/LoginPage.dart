@@ -5,6 +5,8 @@ import 'package:traffic/Pages/SignUpAndLogin/SignupPage.dart';
 import 'package:traffic/Pages/BottomNavigationBarChange.dart';
 import 'package:traffic/Pages/ReminderSheetPage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:traffic/Pages/Provider/QuizProvider.dart'; 
+import 'package:provider/provider.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -22,10 +24,18 @@ class _LoginPageState extends State<LoginPage> {
   bool rememberMe = false;
 
   @override
-  void initState() {
-    super.initState();
-    _loadUserCredentials();
-  }
+@override
+void initState() {
+  super.initState();
+  _loadUserCredentials();
+
+  // Provider ашиглахдаа context-г post frame callback дотор оруулна.
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    final quizProvider = Provider.of<QuizProvider>(context, listen: false);
+    quizProvider.loadQuestions();
+  });
+}
+
 
   // Load saved user credentials if 'Remember Me' was checked previously
   _loadUserCredentials() async {

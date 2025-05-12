@@ -4,6 +4,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart'; // Import FirebaseAuth
 import 'package:flutter/material.dart';
 import 'package:traffic/Pages/UserDashboard.dart'; // Import UserDashboard
+import 'package:traffic/Pages/Provider/QuizProvider.dart'; // Та өөрийн замаа ашиглана уу
+import 'package:provider/provider.dart';
 
 class UserTakeExam extends StatefulWidget {
   const UserTakeExam({Key? key}) : super(key: key);
@@ -21,13 +23,17 @@ class _UserExerciseState extends State<UserTakeExam> {
   int remainingTime = 1200; // 20 minutes (1200 seconds)
   Timer? countdownTimer;
   String emoji = "🙂"; // Default emoji for neutral feedback
+  List<int> skippedQuestionIndices = [];
+  
 
-  @override
-  void initState() {
-    super.initState();
-    fetchQuizzes();
-    startTimer();
-  }
+@override
+void initState() {
+  super.initState();
+  final quizProvider = Provider.of<QuizProvider>(context, listen: false);
+  quizList = quizProvider.questions; // Шууд Provider-оос авна
+  startTimer();
+}
+
 
   // Fetch 10 questions from each collection and combine them
   Future<void> fetchQuizzes() async {
@@ -211,30 +217,36 @@ class _UserExerciseState extends State<UserTakeExam> {
 
   // Start the timer for 20 minutes
   void startTimer() {
-    countdownTimer = Timer.periodic(Duration(seconds: 1), (timer) {
-      if (remainingTime > 0) {
-        setState(() {
-          remainingTime--;
-        });
-      } else {
-        timer.cancel();
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (_) => AlertDialog(
-            title: const Text("Время истекло!"),
-            content: const Text("Вы не успели завершить тест в отведенное время."),
-            actions: [
-              TextButton(
-                child: const Text("OK"),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-            ],
-          ),
-        );
-      }
-    });
-  }
+  countdownTimer = Timer.periodic(Duration(seconds: 1), (timer) {
+    if (remainingTime > 0) {
+      setState(() {
+        remainingTime--;
+      });
+    } else {
+      timer.cancel();
+      saveExamResults(); // Save results even if incomplete
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => AlertDialog(
+          title: const Text("Время истекло!"),
+          content: const Text("Та шалгалтаа хугацаандаа дуусгаж амжаагүй байна."),
+          actions: [
+            TextButton(
+              child: const Text("OK"),
+              onPressed: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (_) => const UserDashboard()),
+                );
+              },
+            ),
+          ],
+        ),
+      );
+    }
+  });
+}
 
   Future<void> saveExamResults() async {
     try {
@@ -261,25 +273,47 @@ class _UserExerciseState extends State<UserTakeExam> {
     }
   }
 
+Future<void> saveWrongAnswerToFirestore(Map<String, dynamic> questionData) async {
+  final userUID = FirebaseAuth.instance.currentUser?.uid;
+  if (userUID == null) return;
+
+  final wrongAnswerData = {
+    'userUID': userUID,
+    'question': questionData['Question'],
+    'correctAnswer': questionData['CorrectAnswer'],
+    'selectedAnswer': selectedOption,
+    'timestamp': Timestamp.now(),
+    'image': questionData['Image'] ?? '',
+  };
+
+  await FirebaseFirestore.instance
+      .collection('WrongAnswerExamCollection')
+      .add(wrongAnswerData);
+}
+
   // Move to the next question
-  void nextQuestion() {
-    final currentQuiz = quizList[currentQuestionIndex];
-    final correctAnswer = currentQuiz['CorrectAnswer'];
+  void nextQuestion() async {
+  final currentQuiz = quizList[currentQuestionIndex];
+  final correctAnswer = currentQuiz['CorrectAnswer'];
 
-    if (selectedOption != null && selectedOption == correctAnswer) {
+  if (selectedOption != null) {
+    if (selectedOption == correctAnswer) {
       correctAnswersCount++;
-    }
-
-    if (currentQuestionIndex < quizList.length - 1) {
-      setState(() {
-        currentQuestionIndex++;
-        selectedOption = null;
-        isAnswerCorrect = null;
-      });
     } else {
-      showFinalResult();
+      await saveWrongAnswerToFirestore(currentQuiz);
     }
   }
+
+  if (currentQuestionIndex < quizList.length - 1) {
+    setState(() {
+      currentQuestionIndex++;
+      selectedOption = null;
+      isAnswerCorrect = null;
+    });
+  } else {
+    showFinalResult();
+  }
+}
 
   // Show final result after the test is completed
   void showFinalResult() {
@@ -461,9 +495,9 @@ class _UserExerciseState extends State<UserTakeExam> {
                                       isAnswerCorrect = isCorrect;
                                     });
 
-                                    if (!isCorrect) {
-                                      // await saveWrongAnswerToFirestore(currentQuiz);
-                                    }
+                                   if (!isCorrect) {
+  await saveWrongAnswerToFirestore(currentQuiz);
+}
                                   }
                                 : null,
                             style: ElevatedButton.styleFrom(

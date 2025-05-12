@@ -55,8 +55,6 @@ void initState() {
   }
 }
 
-
-
  Future<void> checkIfQuestionIsSaved() async {
   final userUID = FirebaseAuth.instance.currentUser?.uid;
   if (userUID != null && quizList.isNotEmpty) {
