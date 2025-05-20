@@ -1,9 +1,11 @@
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'EditProfilePage.dart';
+
+import 'EditProfilePage.dart'; // Your edit page import
 
 class ProfilePage extends StatefulWidget {
   @override
@@ -12,6 +14,7 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   File? _imageFile;
+  String? _photoURL;
   final picker = ImagePicker();
   final currentUser = FirebaseAuth.instance.currentUser;
 
@@ -19,19 +22,24 @@ class _ProfilePageState extends State<ProfilePage> {
   String? email;
   String? password;
 
+  @override
+  void initState() {
+    super.initState();
+    _loadUserInfo();
+  }
+
   Future<void> _loadUserInfo() async {
     if (currentUser == null) return;
 
-    final doc = await FirebaseFirestore.instance
-        .collection('UserList')
-        .doc(currentUser!.uid)
-        .get();
+    final doc = await FirebaseFirestore.instance.collection('UserList').doc(currentUser!.uid).get();
+
     if (doc.exists) {
       final data = doc.data()!;
       setState(() {
         username = data['Username'] ?? '';
         email = data['Email'] ?? '';
         password = data['Password'] ?? '';
+        _photoURL = data['photoURL'];
       });
     }
   }
@@ -39,14 +47,56 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<void> _pickImage() async {
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
     if (pickedFile != null) {
-      setState(() => _imageFile = File(pickedFile.path));
+      File file = File(pickedFile.path);
+      setState(() => _imageFile = file);
+      await _uploadImageToFirebase(file);
     }
   }
 
-  @override
-  void initState() {
-    super.initState();
-    _loadUserInfo();
+  Future<void> _uploadImageToFirebase(File image) async {
+    if (currentUser == null) return;
+
+    try {
+      final storageRef = FirebaseStorage.instance
+          .ref()
+          .child('user_profile_images')
+          .child('${currentUser!.uid}.jpg');
+
+      await storageRef.putFile(image);
+
+      final downloadURL = await storageRef.getDownloadURL();
+
+      await FirebaseFirestore.instance
+          .collection('UserList')
+          .doc(currentUser!.uid)
+          .update({'photoURL': downloadURL});
+
+      setState(() {
+        _photoURL = downloadURL;
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to upload image: $e')),
+      );
+    }
+  }
+
+  void _openEditPage() async {
+    if (username != null && email != null && password != null) {
+      final result = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => EditProfilePage(
+            username: username!,
+            email: email!,
+            password: password!,
+          ),
+        ),
+      );
+      if (result == true) {
+        _loadUserInfo(); // Reload updated info
+      }
+    }
   }
 
   @override
@@ -56,7 +106,7 @@ class _ProfilePageState extends State<ProfilePage> {
       appBar: AppBar(
         title: const Text('Хувийн мэдээлэл', style: TextStyle(fontSize: 16)),
         centerTitle: true,
-                backgroundColor: Colors.blue.shade900,
+        backgroundColor: Colors.blue.shade900,
         foregroundColor: Colors.white,
         elevation: 1,
       ),
@@ -67,10 +117,7 @@ class _ProfilePageState extends State<ProfilePage> {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                  color: Colors.black12, blurRadius: 8, offset: Offset(0, 4)),
-            ],
+            boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 4))],
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -82,8 +129,9 @@ class _ProfilePageState extends State<ProfilePage> {
                     radius: 60,
                     backgroundImage: _imageFile != null
                         ? FileImage(_imageFile!)
-                        : const AssetImage('assets/default_profile.png')
-                            as ImageProvider,
+                        : (_photoURL != null
+                            ? NetworkImage(_photoURL!)
+                            : const AssetImage('assets/default_profile.png') as ImageProvider),
                     backgroundColor: Colors.grey.shade200,
                   ),
                   Container(
@@ -91,17 +139,10 @@ class _ProfilePageState extends State<ProfilePage> {
                       shape: BoxShape.circle,
                       color: Colors.blueAccent,
                       border: Border.all(color: Colors.white, width: 2),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black26,
-                          blurRadius: 4,
-                          offset: Offset(0, 2),
-                        ),
-                      ],
+                      boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2))],
                     ),
                     child: IconButton(
-                      icon: const Icon(Icons.edit,
-                          color: Colors.white, size: 20),
+                      icon: const Icon(Icons.edit, color: Colors.white, size: 20),
                       onPressed: _pickImage,
                       padding: const EdgeInsets.all(4),
                       constraints: const BoxConstraints(),
@@ -110,11 +151,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 ],
               ),
               const SizedBox(height: 16),
-              Text(
-                username ?? '...',
-                style: const TextStyle(
-                    fontSize: 18, fontWeight: FontWeight.w600),
-              ),
+              Text(username ?? '...', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
               const SizedBox(height: 20),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -125,43 +162,19 @@ class _ProfilePageState extends State<ProfilePage> {
                       SizedBox(width: 6),
                       Text(
                         "Хувийн мэдээлэл",
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
+                        style: TextStyle(fontSize: 14, color: Colors.black87),
                       ),
                     ],
                   ),
                   TextButton.icon(
-                    onPressed: () async {
-                      if (username != null &&
-                          email != null &&
-                          password != null) {
-                        final result = await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => EditProfilePage(
-                              username: username!,
-                              email: email!,
-                              password: password!,
-                            ),
-                          ),
-                        );
-                        if (result == true) {
-                          _loadUserInfo(); // 🟢 Шинэчлэгдсэн мэдээллийг дахин унших
-                        }
-                      }
-                    },
+                    onPressed: _openEditPage,
                     icon: const Icon(Icons.edit, size: 15),
                     label: const Text("Засах"),
-                    style: TextButton.styleFrom(
-                      foregroundColor: Colors.blueAccent,
-                    ),
+                    style: TextButton.styleFrom(foregroundColor: Colors.blueAccent),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 10),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -171,19 +184,11 @@ class _ProfilePageState extends State<ProfilePage> {
                       SizedBox(width: 6),
                       Text(
                         "Цахим хаяг",
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
+                        style: TextStyle(fontSize: 14,  color: Colors.black87),
                       ),
                     ],
                   ),
-                  Text(
-                    email ?? '',
-                    style: const TextStyle(
-                        color: Colors.black54, fontSize: 14),
-                  ),
+                  Text(email ?? '', style: const TextStyle(color: Colors.black54, fontSize: 14)),
                 ],
               ),
               const SizedBox(height: 20),
@@ -196,19 +201,13 @@ class _ProfilePageState extends State<ProfilePage> {
                       SizedBox(width: 6),
                       Text(
                         "Нууц үг",
-                        
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
+                        style: TextStyle(fontSize: 14,  color: Colors.black87),
                       ),
                     ],
                   ),
                   Text(
                     password != null ? '*' * password!.length : '',
-                    style: const TextStyle(
-                        color: Colors.black54, fontSize: 14),
+                    style: const TextStyle(color: Colors.black54, fontSize: 14),
                   ),
                 ],
               ),

@@ -42,6 +42,7 @@ class _SignupPageState extends State<SignupPage> {
         "Username": username,
         "Email": email,
         "Password": password,
+        "active": true, 
       });
 
       ScaffoldMessenger.of(context).showSnackBar(

@@ -77,18 +77,24 @@ void initState() {
           password: password,
         );
 
-        // If login is successful, save credentials and move to the next page
-        _saveUserCredentials();
+        DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection('UserList').doc(userCredential.user!.uid).get();
+if (!userDoc.exists) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Хэрэглэгч олдсонгүй!")));
+      setState(() => isLoading = false);
+      return;
+    }
 
-        // Save user data to Firestore (if necessary)
-        await FirebaseFirestore.instance.collection("UserList").doc(userCredential.user!.uid).set({
-          "Email": email,
-          "Password": password,
-       }, SetOptions(merge: true));
+    bool isActive = userDoc['active'] ?? false;
+    if (!isActive) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Хэрэглэгчийн төлөв идэвхгүй байна.")));
+      setState(() => isLoading = false);
+      return;
+    }
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Амжилттай нэвтэрлээ!")),
-        );
+    // User идэвхтэй бол Login амжилттай
+    _saveUserCredentials();
+
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Амжилттай нэвтэрлээ!")));
 
         Navigator.pushReplacement(
           context,

@@ -1,10 +1,10 @@
 import 'dart:async';
-import 'dart:math'; // For random selection
+import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // Import FirebaseAuth
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:traffic/Pages/UserDashboard.dart'; // Import UserDashboard
-import 'package:traffic/Pages/Provider/QuizProvider.dart'; // Та өөрийн замаа ашиглана уу
+import 'package:traffic/Pages/UserDashboard.dart';
+import 'package:traffic/Pages/Provider/QuizProvider.dart';
 import 'package:provider/provider.dart';
 
 class UserTakeExam extends StatefulWidget {
@@ -18,243 +18,110 @@ class _UserExerciseState extends State<UserTakeExam> {
   int currentQuestionIndex = 0;
   int correctAnswersCount = 0;
   List<Map<String, dynamic>> quizList = [];
-  String? selectedOption;
-  bool? isAnswerCorrect;
-  int remainingTime = 1200; // 20 minutes (1200 seconds)
+  Map<int, String?> selectedAnswers = {};
+  Set<int> answeredQuestions = {};
+  int remainingTime = 1200;
   Timer? countdownTimer;
-  String emoji = "🙂"; // Default emoji for neutral feedback
+  String emoji = "🙂";
   List<int> skippedQuestionIndices = [];
-  
 
-@override
-void initState() {
-  super.initState();
-  final quizProvider = Provider.of<QuizProvider>(context, listen: false);
-  quizList = quizProvider.questions; // Шууд Provider-оос авна
-  startTimer();
-}
+  @override
+  void initState() {
+    super.initState();
+    final quizProvider = Provider.of<QuizProvider>(context, listen: false);
+    quizList = quizProvider.questions;
+    fetchQuizzes();
+    startTimer();
+  }
 
-
-  // Fetch 10 questions from each collection and combine them
   Future<void> fetchQuizzes() async {
-    final snapshot1 = await FirebaseFirestore.instance
-        .collection('SmartTrafficInputOneCollection')
-        .orderBy('CreatedAt')
-        .limit(23)
-        .get();
+    try {
+      final collections = [
+        'SmartTrafficInputOneCollection',
+        'SmartTrafficInputTwoCollection',
+        'SmartTrafficInputThreeCollection',
+        'SmartTrafficInputFourCollection',
+        'SmartTrafficInputFiveCollection',
+        'SmartTrafficInputSixCollection',
+        'SmartTrafficInputSevenCollection',
+        'SmartTrafficInputEightCollection',
+        'SmartTrafficInputNineCollection',
+        'SmartTrafficInputTenCollection',
+        'SmartTrafficInputElevenCollection',
+        'SmartTrafficInputTwelveCollection',
+        'SmartTrafficInputThirteenCollection',
+        'SmartTrafficInputFourteenCollection',
+        'SmartTrafficInputFifteenCollection',
+        'SmartTrafficInputSixteenCollection',
+        'SmartTrafficInputSeventeenCollection',
+        'SmartTrafficInputEighteenCollection',
+        'SmartTrafficInputNineteenCollection',
+        'SmartTrafficInputTwentyCollection',
+        'SmartTrafficInputTwentyOneCollection',
+        'SmartTrafficInputTwentyTwoCollection',
+        'SmartTrafficInputTwentyThreeCollection',
+        'SmartTrafficInputTwentyFourCollection',
+      ];
 
-    final snapshot2 = await FirebaseFirestore.instance
-        .collection('SmartTrafficInputTwoCollection')
-        .orderBy('CreatedAt')
-        .limit(23)
-        .get();
+      List<Map<String, dynamic>> allQuestions = [];
 
-        final snapshot3 = await FirebaseFirestore.instance
-        .collection('SmartTrafficInputThreeCollection')
-        .orderBy('CreatedAt')
-        .limit(23)
-        .get();
+      for (var collection in collections) {
+        final snapshot = await FirebaseFirestore.instance
+            .collection(collection)
+            .orderBy('CreatedAt')
+            .limit(23)
+            .get();
+        allQuestions.addAll(snapshot.docs.map((doc) => doc.data()));
+      }
 
-    final snapshot4 = await FirebaseFirestore.instance
-        .collection('SmartTrafficInputFourCollection')
-        .orderBy('CreatedAt')
-        .limit(23)
-        .get();
+      allQuestions.shuffle(Random());
+      setState(() {
+        quizList = allQuestions.take(20).toList();
+      });
+    } catch (e) {
+      debugPrint('Error fetching quizzes: $e');
+    }
+  }
 
-        final snapshot5 = await FirebaseFirestore.instance
-        .collection('SmartTrafficInputFiveCollection')
-        .orderBy('CreatedAt')
-        .limit(23)
-        .get();
-
-    final snapshot6 = await FirebaseFirestore.instance
-        .collection('SmartTrafficInputSixCollection')
-        .orderBy('CreatedAt')
-        .limit(23)
-        .get();
-
-        final snapshot7 = await FirebaseFirestore.instance
-        .collection('SmartTrafficInputSevenCollection')
-        .orderBy('CreatedAt')
-        .limit(23)
-        .get();
-
-    final snapshot8 = await FirebaseFirestore.instance
-        .collection('SmartTrafficInputEightCollection')
-        .orderBy('CreatedAt')
-        .limit(23)
-        .get();
-
-        final snapshot9 = await FirebaseFirestore.instance
-        .collection('SmartTrafficInputNineCollection')
-        .orderBy('CreatedAt')
-        .limit(23)
-        .get();
-
-    final snapshot10 = await FirebaseFirestore.instance
-        .collection('SmartTrafficInputTenCollection')
-        .orderBy('CreatedAt')
-        .limit(23)
-        .get();
-
-        final snapshot11 = await FirebaseFirestore.instance
-        .collection('SmartTrafficInputElevenCollection')
-        .orderBy('CreatedAt')
-        .limit(23)
-        .get();
-
-    final snapshot12 = await FirebaseFirestore.instance
-        .collection('SmartTrafficInputTwelveCollection')
-        .orderBy('CreatedAt')
-        .limit(23)
-        .get();
-
-        final snapshot13 = await FirebaseFirestore.instance
-        .collection('SmartTrafficInputThirteenCollection')
-        .orderBy('CreatedAt')
-        .limit(23)
-        .get();
-
-    final snapshot14 = await FirebaseFirestore.instance
-        .collection('SmartTrafficInputFourteenCollection')
-        .orderBy('CreatedAt')
-        .limit(23)
-        .get();
-
-        final snapshot15 = await FirebaseFirestore.instance
-        .collection('SmartTrafficInputFifteenCollection')
-        .orderBy('CreatedAt')
-        .limit(23)
-        .get();
-
-    final snapshot16 = await FirebaseFirestore.instance
-        .collection('SmartTrafficInputSixteenCollection')
-        .orderBy('CreatedAt')
-        .limit(23)
-        .get();
-
-        final snapshot17 = await FirebaseFirestore.instance
-        .collection('SmartTrafficInputSeventeenCollection')
-        .orderBy('CreatedAt')
-        .limit(23)
-        .get();
-
-    final snapshot18 = await FirebaseFirestore.instance
-        .collection('SmartTrafficInputEighteenCollection')
-        .orderBy('CreatedAt')
-        .limit(23)
-        .get();
-
-        final snapshot19 = await FirebaseFirestore.instance
-        .collection('SmartTrafficInputNineteenCollection')
-        .orderBy('CreatedAt')
-        .limit(23)
-        .get();
-
-    final snapshot20 = await FirebaseFirestore.instance
-        .collection('SmartTrafficInputTwentyCollection')
-        .orderBy('CreatedAt')
-        .limit(23)
-        .get();
-
-        final snapshot21 = await FirebaseFirestore.instance
-        .collection('SmartTrafficInputTwentyOneCollection')
-        .orderBy('CreatedAt')
-        .limit(23)
-        .get();
-
-    final snapshot22 = await FirebaseFirestore.instance
-        .collection('SmartTrafficInputTwentyTwoCollection')
-        .orderBy('CreatedAt')
-        .limit(23)
-        .get();
-
-        final snapshot23 = await FirebaseFirestore.instance
-        .collection('SmartTrafficInputTwentyThreeCollection')
-        .orderBy('CreatedAt')
-        .limit(23)
-        .get();
-
-    final snapshot24 = await FirebaseFirestore.instance
-        .collection('SmartTrafficInputTwentyFourCollection')
-        .orderBy('CreatedAt')
-        .limit(23)
-        .get();
-
-    List<Map<String, dynamic>> allQuestions = [
-      ...snapshot1.docs.map((doc) => doc.data()),
-      ...snapshot2.docs.map((doc) => doc.data()),
-      ...snapshot3.docs.map((doc) => doc.data()),
-      ...snapshot4.docs.map((doc) => doc.data()),
-      ...snapshot5.docs.map((doc) => doc.data()),
-      ...snapshot6.docs.map((doc) => doc.data()),
-      ...snapshot7.docs.map((doc) => doc.data()),
-      ...snapshot8.docs.map((doc) => doc.data()),
-      ...snapshot9.docs.map((doc) => doc.data()),
-      ...snapshot10.docs.map((doc) => doc.data()),
-      ...snapshot11.docs.map((doc) => doc.data()),
-      ...snapshot12.docs.map((doc) => doc.data()),
-      ...snapshot13.docs.map((doc) => doc.data()),
-      ...snapshot14.docs.map((doc) => doc.data()),
-      ...snapshot15.docs.map((doc) => doc.data()),
-      ...snapshot16.docs.map((doc) => doc.data()),
-      ...snapshot17.docs.map((doc) => doc.data()),
-      ...snapshot18.docs.map((doc) => doc.data()),
-      ...snapshot19.docs.map((doc) => doc.data()),
-      ...snapshot20.docs.map((doc) => doc.data()),
-      ...snapshot21.docs.map((doc) => doc.data()),
-      ...snapshot22.docs.map((doc) => doc.data()),
-      ...snapshot23.docs.map((doc) => doc.data()),
-      ...snapshot24.docs.map((doc) => doc.data()),
-    ];
-
-    allQuestions.shuffle(Random());
-
-    setState(() {
-      quizList = allQuestions.take(20).toList();
+  void startTimer() {
+    countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (remainingTime > 0) {
+        setState(() {
+          remainingTime--;
+        });
+      } else {
+        timer.cancel();
+        saveExamResults();
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (_) => AlertDialog(
+            title: const Text("Анхааруулга !!!"),
+            content: const Text("Та шалгалтаа хугацаандаа дуусгаж амжаагүй байна."),
+            actions: [
+              TextButton(
+                child: const Text("OK"),
+                onPressed: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (_) => const UserDashboard()),
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      }
     });
   }
 
-  // Start the timer for 20 minutes
-  void startTimer() {
-  countdownTimer = Timer.periodic(Duration(seconds: 1), (timer) {
-    if (remainingTime > 0) {
-      setState(() {
-        remainingTime--;
-      });
-    } else {
-      timer.cancel();
-      saveExamResults(); // Save results even if incomplete
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => AlertDialog(
-          title: const Text("Время истекло!"),
-          content: const Text("Та шалгалтаа хугацаандаа дуусгаж амжаагүй байна."),
-          actions: [
-            TextButton(
-              child: const Text("OK"),
-              onPressed: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (_) => const UserDashboard()),
-                );
-              },
-            ),
-          ],
-        ),
-      );
-    }
-  });
-}
-
   Future<void> saveExamResults() async {
     try {
-      final userUID = FirebaseAuth.instance.currentUser?.uid;  
+      final userUID = FirebaseAuth.instance.currentUser?.uid;
 
       if (userUID != null) {
         final userResults = {
-          'userUID': userUID, 
+          'userUID': userUID,
           'correctAnswers': correctAnswersCount,
           'wrongAnswers': quizList.length - correctAnswersCount,
           'totalQuestions': quizList.length,
@@ -263,59 +130,73 @@ void initState() {
 
         await FirebaseFirestore.instance
             .collection('saveExamResult')
-            .doc(userUID)  
-            .set(userResults);  
-      } else {
-        debugPrint("User UID not found!");
+            .doc(userUID)
+            .set(userResults);
       }
     } catch (e) {
       debugPrint('Error saving exam results: $e');
     }
   }
 
-Future<void> saveWrongAnswerToFirestore(Map<String, dynamic> questionData) async {
-  final userUID = FirebaseAuth.instance.currentUser?.uid;
-  if (userUID == null) return;
+  Future<void> saveWrongAnswerToFirestore(Map<String, dynamic> questionData) async {
+    final userUID = FirebaseAuth.instance.currentUser?.uid;
+    if (userUID == null) return;
 
-  final wrongAnswerData = {
-    'userUID': userUID,
-    'question': questionData['Question'],
-    'correctAnswer': questionData['CorrectAnswer'],
-    'selectedAnswer': selectedOption,
-    'timestamp': Timestamp.now(),
-    'image': questionData['Image'] ?? '',
-  };
+    try {
+      final wrongAnswerData = {
+        'userUID': userUID,
+        'question': questionData['Question'],
+        'correctAnswer': questionData['CorrectAnswer'],
+        'selectedAnswer': selectedAnswers[currentQuestionIndex],
+        'timestamp': Timestamp.now(),
+        'image': questionData['Image'] ?? '',
+      };
 
-  await FirebaseFirestore.instance
-      .collection('WrongAnswerExamCollection')
-      .add(wrongAnswerData);
-}
-
-  // Move to the next question
-  void nextQuestion() async {
-  final currentQuiz = quizList[currentQuestionIndex];
-  final correctAnswer = currentQuiz['CorrectAnswer'];
-
-  if (selectedOption != null) {
-    if (selectedOption == correctAnswer) {
-      correctAnswersCount++;
-    } else {
-      await saveWrongAnswerToFirestore(currentQuiz);
+      await FirebaseFirestore.instance
+          .collection('WrongAnswerExamCollection')
+          .add(wrongAnswerData);
+    } catch (e) {
+      debugPrint('Error saving wrong answer: $e');
     }
   }
 
-  if (currentQuestionIndex < quizList.length - 1) {
+  void selectAnswer(String answer) {
     setState(() {
-      currentQuestionIndex++;
-      selectedOption = null;
-      isAnswerCorrect = null;
+      selectedAnswers[currentQuestionIndex] = answer;
     });
-  } else {
-    showFinalResult();
   }
-}
 
-  // Show final result after the test is completed
+  void nextQuestion() async {
+    final currentQuiz = quizList[currentQuestionIndex];
+    final correctAnswer = currentQuiz['CorrectAnswer'];
+    final selectedAnswer = selectedAnswers[currentQuestionIndex];
+
+    if (selectedAnswer != null && !answeredQuestions.contains(currentQuestionIndex)) {
+      if (selectedAnswer == correctAnswer) {
+        correctAnswersCount++;
+      } else {
+        await saveWrongAnswerToFirestore(currentQuiz);
+      }
+      answeredQuestions.add(currentQuestionIndex);
+    }
+
+    if (currentQuestionIndex < quizList.length - 1) {
+      setState(() {
+        currentQuestionIndex++;
+      });
+    } else {
+      showFinalResult();
+    }
+  }
+
+  void previousQuestion() {
+    if (currentQuestionIndex > 0) {
+      setState(() {
+        currentQuestionIndex--;
+      });
+    }
+  }
+
   void showFinalResult() {
     if (correctAnswersCount == quizList.length) {
       emoji = "🎉";
@@ -325,9 +206,7 @@ Future<void> saveWrongAnswerToFirestore(Map<String, dynamic> questionData) async
       emoji = "😔";
     }
 
-    saveExamResults();  // Save the results after the test is completed
-
-    bool navigated = false;
+    saveExamResults();
 
     showDialog(
       context: context,
@@ -343,13 +222,10 @@ Future<void> saveWrongAnswerToFirestore(Map<String, dynamic> questionData) async
         actions: [
           TextButton(
             onPressed: () {
-              if (!navigated) {
-                navigated = true;
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => const UserDashboard()),
-                );
-              }
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const UserDashboard()),
+              );
             },
             child: const Text("OK"),
           ),
@@ -384,24 +260,19 @@ Future<void> saveWrongAnswerToFirestore(Map<String, dynamic> questionData) async
 
     return WillPopScope(
       onWillPop: () async {
-        // Show confirmation dialog if the user tries to go back
         bool? exit = await showDialog(
           context: context,
           builder: (context) => AlertDialog(
-            title: const Text("Тестээс гарах уу?"),
-            content: const Text("Та шалгалтыг дуусгаагүй байна. Гарахдаа итгэлтэй байна уу?"),
+            title: const Text("Шалгалт дуусгах уу?"),
+            content: const Text("Үр дүн дашбоард-д хадгалагдахгүйг анхаарна уу? Гарахдаа итгэлтэй байна уу?"),
             actions: [
               TextButton(
                 child: const Text("Үгүй"),
-                onPressed: () {
-                  Navigator.of(context).pop(false); // Don't exit
-                },
+                onPressed: () => Navigator.of(context).pop(false),
               ),
               TextButton(
                 child: const Text("Тийм"),
-                onPressed: () {
-                  Navigator.of(context).pop(true); // Exit the exam
-                },
+                onPressed: () => Navigator.of(context).pop(true),
               ),
             ],
           ),
@@ -412,7 +283,7 @@ Future<void> saveWrongAnswerToFirestore(Map<String, dynamic> questionData) async
         appBar: AppBar(
           title: Text(
             "Асуулт ${currentQuestionIndex + 1}/${quizList.length}",
-            style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 15),
+            style: const TextStyle(color: Colors.black, fontSize: 15),
           ),
           backgroundColor: Colors.blue[100],
           iconTheme: const IconThemeData(color: Colors.black),
@@ -472,15 +343,15 @@ Future<void> saveWrongAnswerToFirestore(Map<String, dynamic> questionData) async
                       ),
                     const SizedBox(height: 20),
                     ...List.generate(answers.length, (index) {
-                      final isSelected = selectedOption == answers[index];
+                      final isSelected = selectedAnswers[currentQuestionIndex] == answers[index];
                       final isCorrect = answers[index] == currentQuiz['CorrectAnswer'];
 
-                      Color buttonColor = Colors.white;
-                      if (selectedOption != null) {
+                      Color buttonColor = isSelected ? Colors.blue[100]! : Colors.white;
+                      if (selectedAnswers[currentQuestionIndex] != null) {
                         if (isSelected && isCorrect) {
-                          buttonColor = Colors.greenAccent;
+                          buttonColor = Colors.blue;
                         } else if (isSelected && !isCorrect) {
-                          buttonColor = Colors.redAccent;
+                          buttonColor = Colors.blue;
                         }
                       }
 
@@ -488,18 +359,7 @@ Future<void> saveWrongAnswerToFirestore(Map<String, dynamic> questionData) async
                         padding: const EdgeInsets.only(bottom: 8),
                         child: Center(
                           child: ElevatedButton(
-                            onPressed: selectedOption == null
-                                ? () async {
-                                    setState(() {
-                                      selectedOption = answers[index];
-                                      isAnswerCorrect = isCorrect;
-                                    });
-
-                                   if (!isCorrect) {
-  await saveWrongAnswerToFirestore(currentQuiz);
-}
-                                  }
-                                : null,
+                            onPressed: () => selectAnswer(answers[index]),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: buttonColor,
                               foregroundColor: Colors.black,
@@ -526,70 +386,62 @@ Future<void> saveWrongAnswerToFirestore(Map<String, dynamic> questionData) async
                         ),
                       );
                     }),
-                    const SizedBox(height: 15),
                   ],
                 ),
               ),
             ),
-            if (selectedOption != null || currentQuestionIndex > 0)
-              Positioned(
-                bottom: 20,
-                left: 20,
-                right: 20,
-                child: Row(
-                  children: [
-                    if (currentQuestionIndex > 0)
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () {
-                            setState(() {
-                              currentQuestionIndex--;
-                              selectedOption = null;
-                              isAnswerCorrect = null;
-                            });
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blueAccent,
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(25.0),
-                            ),
-                          ),
-                          child: const Text(
-                            'Буцах',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                    if (currentQuestionIndex > 0) const SizedBox(width: 10),
+            Positioned(
+              bottom: 20,
+              left: 20,
+              right: 20,
+              child: Row(
+                children: [
+                  if (currentQuestionIndex > 0)
                     Expanded(
                       child: ElevatedButton(
-                        onPressed: selectedOption == null ? null : nextQuestion,
+                        onPressed: previousQuestion,
                         style: ElevatedButton.styleFrom(
-                          minimumSize: const Size(double.infinity, 50),
                           backgroundColor: Colors.blueAccent,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(25),
+                            borderRadius: BorderRadius.circular(25.0),
                           ),
-                          side: const BorderSide(color: Colors.white, width: 1),
                         ),
-                        child: Text(
-                          currentQuestionIndex == quizList.length - 1 ? 'Дуусгах' : 'Дараа',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
+                        child: const Text(
+                          'Буцах',
+                          style: TextStyle(
                             color: Colors.white,
                             fontSize: 15,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
                     ),
-                  ],
-                ),
+                  if (currentQuestionIndex > 0) const SizedBox(width: 10),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: selectedAnswers[currentQuestionIndex] == null ? null : nextQuestion,
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: const Size(double.infinity, 50),
+                        backgroundColor: Colors.blueAccent,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(25),
+                        ),
+                        side: const BorderSide(color: Colors.white, width: 1),
+                      ),
+                      child: Text(
+                        currentQuestionIndex == quizList.length - 1 ? 'Дуусгах' : 'Дараа',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
+            ),
           ],
         ),
       ),

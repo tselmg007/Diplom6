@@ -4,7 +4,7 @@ import 'package:traffic/Pages/FlashCard/FlashCardList.dart';
 import 'package:traffic/Pages/SignUpAndLogin/ProfilePage.dart';
 import 'package:traffic/Pages/UserDashboard.dart';
 import 'package:traffic/Pages/UserHomeScreen.dart';
-import 'package:traffic/Pages/UserTakeExam.dart';
+import 'package:traffic/Pages/StartExamPage.dart';
 import 'package:traffic/Pages/WrongAnswerDetailPage/WrongAnswerListPage.dart';
 
 class BottomNavigationBarChange extends StatefulWidget {
@@ -28,7 +28,7 @@ class _BottomNavigationBarChangeState extends State<BottomNavigationBarChange> {
     // 👇 Хуудаснуудыг initState дээр нэг удаа л үүсгэнэ
     _pages = [
    UserHomeScreenPage(),
-  const UserTakeExam(),
+   StartExamPage(),
   const WrongAnswerListPage(),
   const UserDashboard(),
    FlashCardList(),

@@ -34,9 +34,9 @@ class UserDashboard extends StatefulWidget {
 }
 
 class _UserDashboardState extends State<UserDashboard> {
-  int totalQuestions = 0;
-  int correctAnswers = 0;
-  int wrongAnswers = 0;
+  int firsttotalQuestions = 0;
+  int firstcorrectAnswers = 0;
+  int firstwrongAnswers = 0;
 
   int secondTotalQuestions = 0;
   int secondCorrectAnswers = 0;
@@ -203,9 +203,9 @@ class _UserDashboardState extends State<UserDashboard> {
       ]);
 
       setState(() {
-        totalQuestions = futures[0].docs.length;
-        correctAnswers = totalQuestions - futures[1].docs.length;
-        wrongAnswers = futures[1].docs.length;
+        firsttotalQuestions = futures[0].docs.length;
+        firstcorrectAnswers = firsttotalQuestions - futures[1].docs.length;
+        firstwrongAnswers = futures[1].docs.length;
 
         secondTotalQuestions = futures[2].docs.length;
         secondCorrectAnswers = secondTotalQuestions - futures[3].docs.length;
@@ -237,7 +237,7 @@ class _UserDashboardState extends State<UserDashboard> {
 
         nineTotalQuestions = futures[16].docs.length;
         nineCorrectAnswers = nineTotalQuestions - futures[17].docs.length;
-        wrongAnswers = futures[17].docs.length;
+        nineWrongAnswers = futures[17].docs.length;
 
         tenTotalQuestions = futures[18].docs.length;
         tenCorrectAnswers = tenTotalQuestions - futures[19].docs.length;
@@ -288,7 +288,7 @@ class _UserDashboardState extends State<UserDashboard> {
         twentyWrongAnswers= futures[41].docs.length;
 
         twentytwoTotalQuestions = futures[42].docs.length;
-        secondCorrectAnswers = twentytwoTotalQuestions - futures[43].docs.length;
+        twentytwoCorrectAnswers = twentytwoTotalQuestions - futures[43].docs.length;
         twentytwoWrongAnswers = futures[43].docs.length;
 
         twentythreeTotalQuestions = futures[44].docs.length;
@@ -346,7 +346,7 @@ class _UserDashboardState extends State<UserDashboard> {
 
   @override
   Widget build(BuildContext context) {
-    final emoji = wrongAnswers > 2 ? "😔" : "🎉";
+    final emoji = firstwrongAnswers > 2 ? "😔" : "🎉";
 
     return Scaffold(
       appBar: AppBar(
@@ -406,8 +406,8 @@ class _UserDashboardState extends State<UserDashboard> {
   Widget _buildPracticeContent(String emoji) {
     return Column(
       children: [
-        _buildCategoryCard('Нэр томьёоны тодорхойлолт', totalQuestions, correctAnswers, wrongAnswers,
-            getPercentage(totalQuestions, correctAnswers), emoji, assetImage: 'assets/1.png'),
+        _buildCategoryCard('Нэр томьёоны тодорхойлолт', firsttotalQuestions, firstcorrectAnswers, firstwrongAnswers,
+            getPercentage(firsttotalQuestions, firstcorrectAnswers), emoji, assetImage: 'assets/1.png'),
         _buildCategoryCard('Механикжсан тээврийн хэрэгслийн ангилал', secondTotalQuestions,
             secondCorrectAnswers, secondWrongAnswers, getPercentage(secondTotalQuestions, secondCorrectAnswers), emoji, assetImage: 'assets/2.png'),
         _buildCategoryCard('Жолоочийн үүрэг', threeTotalQuestions, threeCorrectAnswers,

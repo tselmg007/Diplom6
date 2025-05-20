@@ -259,8 +259,11 @@ Future<void> onCheckboxChanged(bool? val) async {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text("Асуулт ${widget.startIndex + currentQuestionIndex}/${widget.endIndex}",
-            style: const TextStyle(color: Colors.black)),
+         title: Text(
+  "Асуулт ${widget.startIndex + currentQuestionIndex}/${widget.endIndex}",
+  style: const TextStyle(color: Colors.black,fontSize: 15),
+  strutStyle: const StrutStyle(fontSize: 15),
+),
         backgroundColor: Colors.blue[100],
         iconTheme: const IconThemeData(color: Colors.black),
         actions: [

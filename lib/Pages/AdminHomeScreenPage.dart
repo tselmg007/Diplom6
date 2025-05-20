@@ -47,6 +47,8 @@ import 'package:traffic/Pages/SignIn/AdminSignInTwentyOnePage.dart';
 import 'package:traffic/Pages/SignIn/AdminSignInTwentyTwoPage.dart';
 import 'package:traffic/Pages/SignIn/AdminSignInTwentyThreePage.dart';
 import 'package:traffic/Pages/SignIn/AdminSignInTwentyFourPage.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // Import FirebaseAuth
 
 class AdminHomeScreenPage extends StatefulWidget {
   const AdminHomeScreenPage({Key? key}) : super(key: key);
@@ -56,23 +58,223 @@ class AdminHomeScreenPage extends StatefulWidget {
 }
 
 class _AnswerPageState extends State<AdminHomeScreenPage> {
+    final FirebaseFirestore firestore = FirebaseFirestore.instance;
   final List<Widget> index = [];
+  bool isActiveStatusOn = false;
+
+void _showUserListDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          content: SizedBox(
+            width: double.maxFinite,
+            child: StreamBuilder<QuerySnapshot>(
+              stream: firestore.collection('UserList').snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return const Text('Алдаа гарлаа');
+                }
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                final users = snapshot.data!.docs;
+                if (users.isEmpty) {
+                  return const Text('Хэрэглэгч олдсонгүй');
+                }
+                return ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: users.length,
+                  itemBuilder: (context, index) {
+                    var user = users[index];
+                    String email = user['Email'] ?? 'N/A';
+                    bool isActive = user['active'] ?? false;
+
+                    return ListTile(
+                      subtitle: Text(email),
+                      trailing: Switch(
+  value: isActive,
+  onChanged: (val) async {
+    bool isAdmin = await _showAdminAuthDialog();
+    if (isAdmin) {
+      await firestore.collection('UserList').doc(user.id).update({'active': val});
+    } else {
+      // Баталгаажуулалт амжилтгүй бол ямар нэг action авах боломжтой
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Админд эрх олгогдоогүй байна.')),
+      );
+    }
+  },
+  activeColor: Colors.green,
+),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Хаах'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+Future<bool> _showAdminAuthDialog() async {
+  String emailInput = '';
+  String passwordInput = '';
+  final _formKey = GlobalKey<FormState>();
+
+  return await showDialog<bool>(
+    context: context,
+    barrierDismissible: false,
+    builder: (context) {
+      bool isPasswordVisible = false;
+
+      return StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            content: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    decoration: InputDecoration(
+                      labelText: 'Имэйл',
+                      contentPadding: EdgeInsets.symmetric(vertical: 15, horizontal: 20),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.blue, width: 2),
+                      ),
+                      suffixIcon: Icon(Icons.email, color: Colors.grey[600]),
+                    ),
+                    keyboardType: TextInputType.emailAddress,
+                    onChanged: (val) => emailInput = val.trim(),
+                    validator: (val) {
+                      if (val == null || val.isEmpty) {
+                        return 'Имэйл оруулна уу?';
+                      }
+                      // Энгийн email шалгалт
+                      String pattern =
+                          r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9]+\.[a-zA-Z]+";
+                      RegExp regex = RegExp(pattern);
+                      if (!regex.hasMatch(val)) {
+                        return 'Имэйл буруу форматтай байна';
+                      }
+                      return null;
+                    },
+                    style: TextStyle(fontSize: 16),
+                  ),
+                  SizedBox(height: 15),
+                  TextFormField(
+                    decoration: InputDecoration(
+                      labelText: 'Нууц үг',
+                      contentPadding: EdgeInsets.symmetric(vertical: 15, horizontal: 20),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.blue, width: 2),
+                      ),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          isPasswordVisible ? Icons.visibility_off : Icons.visibility,
+                          color: Colors.grey[600],
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            isPasswordVisible = !isPasswordVisible;
+                          });
+                        },
+                      ),
+                    ),
+                    obscureText: !isPasswordVisible,
+                    onChanged: (val) => passwordInput = val.trim(),
+                    validator: (val) {
+                      if (val == null || val.isEmpty) {
+                        return 'Нууц үг оруулна уу?';
+                      }
+                      return null;
+                    },
+                    style: TextStyle(fontSize: 16),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: Text('Буцах'),
+              ),
+              TextButton(
+                onPressed: () async {
+                  if (_formKey.currentState!.validate()) {
+                    try {
+                      UserCredential userCredential = await FirebaseAuth.instance
+                          .signInWithEmailAndPassword(email: emailInput, password: passwordInput);
+
+                      if (userCredential.user != null &&
+                          userCredential.user!.email == "slmndeveloper8@gmail.com") {
+                        Navigator.of(context).pop(true);
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Зөв админ имэйл эсэхийг шалгаарай')),
+                        );
+                      }
+                    } on FirebaseAuthException catch (e) {
+                      String errorMessage = 'Алдаа гарлаа';
+                      if (e.code == 'wrong-password') {
+                        errorMessage = 'Нууц үг буруу байна';
+                      } else if (e.code == 'user-not-found') {
+                        errorMessage = 'Хэрэглэгч олдсонгүй';
+                      } else if (e.code == 'invalid-email') {
+                        errorMessage = 'Имэйл буруу форматтай байна';
+                      }
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(errorMessage)),
+                      );
+                    }
+                  }
+                },
+                child: Text('Баталгаажуулах'),
+              ),
+            ],
+          );
+        },
+      );
+    },
+  ) ??
+      false;
+}
+
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
         centerTitle: true,
-        // leading: MenuWidget(),
+        title: GestureDetector(
+          onTap: _showUserListDialog,
+          child: const Text(
+            'Хэрэглэгчийн жагсаалт',
+            style: TextStyle(color: Colors.black, fontSize: 15, decoration: TextDecoration.underline),
+            textAlign: TextAlign.right,
+          ),
+        ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(15),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
+            // Таны одоогийн UI, товчлуурууд эндээ байж болно
+            const Text(
               "Дэд бүлэг асуултууд",
               textAlign: TextAlign.left,
               style: TextStyle(
@@ -134,7 +336,7 @@ ElevatedButton(
     );
   },
   style: ElevatedButton.styleFrom(
-    backgroundColor: Colors.blue[100], // Dark background for this button
+    backgroundColor: Colors.blue[200], // Dark background for this button
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(10),
     ),
@@ -220,7 +422,7 @@ ElevatedButton(
     );
   },
   style: ElevatedButton.styleFrom(
-    backgroundColor: Colors.blue[100],
+    backgroundColor: Colors.blue[200],
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(10),
     ),
@@ -298,7 +500,7 @@ SizedBox(height: 8),
                 );
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue[100],
+                backgroundColor: Colors.blue[200],
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -371,7 +573,7 @@ SizedBox(height: 8),
                 );
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue[100],
+                backgroundColor: Colors.blue[200],
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -444,7 +646,7 @@ SizedBox(height: 8),
                 );
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue[100],
+                backgroundColor: Colors.blue[200],
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -515,7 +717,7 @@ SizedBox(height: 8),
                 );
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue[100],
+                backgroundColor: Colors.blue[200],
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -599,7 +801,7 @@ SizedBox(height: 8,),
     );
   },
   style: ElevatedButton.styleFrom(
-    backgroundColor: Colors.blue[100],
+    backgroundColor: Colors.blue[200],
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(10),
     ),
@@ -690,7 +892,7 @@ ElevatedButton(
     );
   },
   style: ElevatedButton.styleFrom(
-    backgroundColor: Colors.blue[100],
+    backgroundColor: Colors.blue[200],
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(10),
     ),
@@ -782,7 +984,7 @@ SizedBox(height: 8,),
     );
   },
   style: ElevatedButton.styleFrom(
-    backgroundColor: Colors.blue[100],
+    backgroundColor: Colors.blue[200],
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(10),
     ),
@@ -860,7 +1062,7 @@ SizedBox(height: 8,),
                 );
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue[100],
+                backgroundColor: Colors.blue[200],
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -932,7 +1134,7 @@ SizedBox(height: 8,),
                 );
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue[100],
+                backgroundColor: Colors.blue[200],
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -1004,7 +1206,7 @@ SizedBox(height: 8,),
                 );
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue[100],
+                backgroundColor: Colors.blue[200],
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -1076,7 +1278,7 @@ SizedBox(height: 8,),
                 );
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue[100],
+                backgroundColor: Colors.blue[200],
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -1148,7 +1350,7 @@ SizedBox(height: 8,),
                 );
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue[100],
+                backgroundColor: Colors.blue[200],
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -1220,7 +1422,7 @@ SizedBox(height: 8,),
                 );
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue[100],
+                backgroundColor: Colors.blue[200],
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -1292,7 +1494,7 @@ SizedBox(height: 8,),
                 );
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue[100],
+                backgroundColor: Colors.blue[200],
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -1376,7 +1578,7 @@ SizedBox(height: 8,),
     );
   },
   style: ElevatedButton.styleFrom(
-    backgroundColor: Colors.blue[100],
+    backgroundColor: Colors.blue[200],
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(10),
     ),
@@ -1453,7 +1655,7 @@ SizedBox(height: 8,),
                 );
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue[100],
+                backgroundColor: Colors.blue[200],
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -1478,7 +1680,6 @@ SizedBox(height: 8,),
               ),
             ),  
              SizedBox(height: 8),
-               SizedBox(height: 8),
             ElevatedButton(
               onPressed: () {
                 Navigator.push(
@@ -1525,7 +1726,7 @@ SizedBox(height: 8,),
                 );
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue[100],
+                backgroundColor: Colors.blue[200],
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -1608,7 +1809,7 @@ SizedBox(height: 8,),
     );
   },
   style: ElevatedButton.styleFrom(
-    backgroundColor: Colors.blue[100],
+    backgroundColor: Colors.blue[200],
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(10),
     ),
@@ -1687,7 +1888,7 @@ SizedBox(height: 8,),
                 );
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue[100],
+                backgroundColor: Colors.blue[200],
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -1772,7 +1973,7 @@ SizedBox(height: 10,),
     );
   },
   style: ElevatedButton.styleFrom(
-    backgroundColor: Colors.blue[100],
+    backgroundColor: Colors.blue[200],
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(10),
     ),
@@ -1860,7 +2061,7 @@ SizedBox(height: 10,),
     );
   },
   style: ElevatedButton.styleFrom(
-    backgroundColor: Colors.blue[100],
+    backgroundColor: Colors.blue[200],
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(10),
     ),
@@ -1939,7 +2140,7 @@ SizedBox(height: 10,),
                 );
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue[100],
+                backgroundColor: Colors.blue[200],
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
