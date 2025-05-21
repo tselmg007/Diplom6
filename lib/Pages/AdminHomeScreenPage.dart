@@ -63,66 +63,83 @@ class _AnswerPageState extends State<AdminHomeScreenPage> {
   bool isActiveStatusOn = false;
 
 void _showUserListDialog() {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          content: SizedBox(
-            width: double.maxFinite,
-            child: StreamBuilder<QuerySnapshot>(
-              stream: firestore.collection('UserList').snapshots(),
-              builder: (context, snapshot) {
-                if (snapshot.hasError) {
-                  return const Text('Алдаа гарлаа');
-                }
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                final users = snapshot.data!.docs;
-                if (users.isEmpty) {
-                  return const Text('Хэрэглэгч олдсонгүй');
-                }
-                return ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: users.length,
-                  itemBuilder: (context, index) {
-                    var user = users[index];
-                    String email = user['Email'] ?? 'N/A';
-                    bool isActive = user['active'] ?? false;
+  showDialog(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        // Гадна талын padding (optional)
+        insetPadding: const EdgeInsets.all(20),
 
-                    return ListTile(
-                      subtitle: Text(email),
-                      trailing: Switch(
-  value: isActive,
-  onChanged: (val) async {
-    bool isAdmin = await _showAdminAuthDialog();
-    if (isAdmin) {
-      await firestore.collection('UserList').doc(user.id).update({'active': val});
-    } else {
-      // Баталгаажуулалт амжилтгүй бол ямар нэг action авах боломжтой
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Админд эрх олгогдоогүй байна.')),
-      );
-    }
-  },
-  activeColor: Colors.green,
-),
-                    );
-                  },
-                );
-              },
-            ),
+        // Контент хэсгийн padding
+        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+
+        content: SizedBox(
+          width: double.maxFinite,
+          child: StreamBuilder<QuerySnapshot>(
+            stream: firestore.collection('UserList').snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.hasError) {
+                return const Text('Алдаа гарлаа');
+              }
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              final users = snapshot.data!.docs;
+              if (users.isEmpty) {
+                return const Text('Хэрэглэгч олдсонгүй');
+              }
+            return ListView.builder(
+  shrinkWrap: true,
+  itemCount: users.length,
+  itemBuilder: (context, index) {
+    var user = users[index];
+    String email = user['Email'] ?? 'N/A';
+    bool isActive = user['active'] ?? false;
+
+    return ListTile(
+      title: Row(
+        children: [
+          Text(
+            '${index + 1}.',
+            style: const TextStyle(fontWeight: FontWeight.bold),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Хаах'),
-            ),
-          ],
-        );
-      },
+          const SizedBox(width: 8), // дугаар ба email хооронд багахан зай
+          Expanded(
+            child: Text(email, overflow: TextOverflow.ellipsis),
+          ),
+        ],
+      ),
+      trailing: Switch(
+        value: isActive,
+        onChanged: (val) async {
+          bool isAdmin = await _showAdminAuthDialog();
+          if (isAdmin) {
+            await firestore.collection('UserList').doc(user.id).update({'active': val});
+          }
+        },
+        activeColor: Colors.green,
+      ),
+      dense: true,
+      visualDensity: const VisualDensity(vertical: -4),
     );
-  }
+  },
+);
+
+
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Хаах'),
+          ),
+        ],
+      );
+    },
+  );
+}
+
 
 Future<bool> _showAdminAuthDialog() async {
   String emailInput = '';
@@ -263,7 +280,7 @@ Future<bool> _showAdminAuthDialog() async {
           onTap: _showUserListDialog,
           child: const Text(
             'Хэрэглэгчийн жагсаалт',
-            style: TextStyle(color: Colors.black, fontSize: 15, decoration: TextDecoration.underline),
+            style: TextStyle(color: Color.fromARGB(255, 17, 176, 224), fontSize: 15, decoration: TextDecoration.underline),
             textAlign: TextAlign.right,
           ),
         ),
