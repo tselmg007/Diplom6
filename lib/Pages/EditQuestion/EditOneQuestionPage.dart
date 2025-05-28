@@ -109,7 +109,7 @@ class _EditOneQuestionPageState extends State<EditOneQuestionPage> {
       };
 
       await FirebaseFirestore.instance
-          .collection('TestCollection')
+          .collection('SmartTrafficInputOneCollection')
           .doc(widget.questionId)
           .update(updatedData);
 
@@ -190,7 +190,7 @@ class _EditOneQuestionPageState extends State<EditOneQuestionPage> {
                           icon: Icon(Icons.delete, color: Colors.red),
                         ),
                       ],
-                    )
+                    ) 
                   : imageUrl != null && imageUrl!.isNotEmpty
                       ? Column(
                           children: [

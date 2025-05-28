@@ -108,7 +108,7 @@ class _SignupPageState extends State<SignupPage> {
                 style: const TextStyle(color: Colors.white),
                 decoration: const InputDecoration(
                   prefixIcon: Icon(Icons.person, color: Colors.white),
-                  labelText: 'Username',
+                  labelText: 'Нэр',
                   labelStyle: TextStyle(color: Colors.white70),
                   enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white38)),
                   focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white)),
@@ -129,7 +129,7 @@ class _SignupPageState extends State<SignupPage> {
                 style: const TextStyle(color: Colors.white),
                 decoration: const InputDecoration(
                   prefixIcon: Icon(Icons.email, color: Colors.white),
-                  labelText: 'Email',
+                  labelText: 'Цахим хаяг',
                   labelStyle: TextStyle(color: Colors.white70),
                   enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white38)),
                   focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white)),
@@ -154,7 +154,7 @@ class _SignupPageState extends State<SignupPage> {
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
                   prefixIcon: const Icon(Icons.lock, color: Colors.white),
-                  labelText: 'Password',
+                  labelText: 'Нууц үг',
                   labelStyle: const TextStyle(color: Colors.white70),
                   enabledBorder: const UnderlineInputBorder(borderSide: BorderSide(color: Colors.white38)),
                   focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: Colors.white)),
@@ -193,7 +193,7 @@ class _SignupPageState extends State<SignupPage> {
                 onPressed: isLoading ? null : registerUser,
                 child: isLoading
                     ? const CircularProgressIndicator()
-                    : const Text("SIGN UP", style: TextStyle(color: Colors.deepPurple)),
+                    : const Text("Бүртгүүлэх", style: TextStyle(color: Colors.deepPurple)),
               ),
               const SizedBox(height: 20),
 
@@ -210,7 +210,7 @@ class _SignupPageState extends State<SignupPage> {
                     MaterialPageRoute(builder: (context) => const LoginPage()),
                   );
                 },
-                child: const Text("Already have an account? Login", style: TextStyle(color: Colors.white)),
+                child: const Text("Бүртгэлтэй юу? Нэвтрэх", style: TextStyle(color: Colors.white)),
               ),
             ]),
           ),

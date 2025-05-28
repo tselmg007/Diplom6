@@ -137,7 +137,7 @@ class _WrongAnswerDetailPage1State extends State<WrongAnswerDetailPageEight> {
       appBar: AppBar(
         title: Text(
           "Асуулт ${currentQuestionIndex + 1}/${quizList.length}",
-          style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 15),
+          style: const TextStyle(color: Colors.black, fontSize: 15),
         ),
         backgroundColor: Colors.blue[100],
         iconTheme: const IconThemeData(color: Colors.black),

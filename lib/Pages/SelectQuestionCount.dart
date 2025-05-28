@@ -36,19 +36,26 @@ class _DynamicQuestionSelectDialogState
   }
 
   List<Map<String, int>> generateRanges() {
-    List<Map<String, int>> result = [];
-    int step = widget.totalQuestions <= 40 ? 10 : 20;
-    int currentStart = 1;
+  List<Map<String, int>> result = [];
+  int step = widget.totalQuestions <= 40 ? 10 : 20;
+  int currentStart = 1;
 
-    while (currentStart <= widget.totalQuestions) {
-      int end = currentStart + step - 1;
-      if (end > widget.totalQuestions) end = widget.totalQuestions;
-      result.add({'start': currentStart, 'end': end});
-      currentStart = end + 1;
+  while (currentStart <= widget.totalQuestions) {
+    int end = currentStart + step - 1;
+    if (end > widget.totalQuestions) end = widget.totalQuestions;
+
+    // ❌ Хэрвээ ганцхан асуулт үлдэж байвал (all багц байхад хэрэггүй)
+    if (widget.totalQuestions > 10 && end == widget.totalQuestions && end == currentStart) {
+      break;
     }
 
-    return result;
+    result.add({'start': currentStart, 'end': end});
+    currentStart = end + 1;
   }
+
+  return result;
+}
+
 
   bool isSelected(Map<String, int> range) {
     return selectedRanges.any((r) =>

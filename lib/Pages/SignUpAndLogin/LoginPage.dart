@@ -52,10 +52,10 @@ void initState() {
   // Save user credentials if 'Remember Me' is checked
   _saveUserCredentials() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    prefs.setBool('rememberMe', rememberMe);
+    prefs.setBool('Намайг сана', rememberMe);
     if (rememberMe) {
-      prefs.setString('email', emailController.text);
-      prefs.setString('password', passwordController.text);
+      prefs.setString('Цахим хаяг', emailController.text);
+      prefs.setString('Нууц үг', passwordController.text);
     }
   }
 
@@ -204,7 +204,7 @@ if (!userDoc.exists) {
                 style: const TextStyle(color: Colors.white),
                 decoration: const InputDecoration(
                   prefixIcon: Icon(Icons.email, color: Colors.white),
-                  labelText: 'Email',
+                  labelText: 'Цахим хаяг',
                   labelStyle: TextStyle(color: Colors.white70),
                   enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white38)),
                   focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white)),
@@ -226,7 +226,7 @@ if (!userDoc.exists) {
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
                   prefixIcon: const Icon(Icons.lock, color: Colors.white),
-                  labelText: 'Password',
+                  labelText: 'Нууц үг',
                   labelStyle: const TextStyle(color: Colors.white70),
                   enabledBorder: const UnderlineInputBorder(borderSide: BorderSide(color: Colors.white38)),
                   focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: Colors.white)),
@@ -263,7 +263,7 @@ if (!userDoc.exists) {
                       });
                     },
                   ),
-                  const Text("Remember Me", style: TextStyle(color: Colors.white)),
+                  const Text("Намайг сана", style: TextStyle(color: Colors.white)),
                 ],
               ),
 
@@ -277,7 +277,7 @@ if (!userDoc.exists) {
                 onPressed: isLoading ? null : loginUser,
                 child: isLoading
                     ? const CircularProgressIndicator()
-                    : const Text("LOGIN", style: TextStyle(color: Colors.deepPurple)),
+                    : const Text("Нэвтрэх", style: TextStyle(color: Colors.deepPurple)),
               ),
 
               const SizedBox(height: 15),
@@ -290,7 +290,7 @@ if (!userDoc.exists) {
                   );
                 },
                 child: const Text(
-                  "Don't have an account? Sign Up",
+                  "Бүртгүүлэх",
                   style: TextStyle(color: Colors.white, fontWeight: FontWeight.w500),
                 ),
               ),

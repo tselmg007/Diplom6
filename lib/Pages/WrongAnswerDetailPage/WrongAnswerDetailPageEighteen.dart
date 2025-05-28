@@ -104,7 +104,7 @@ class _WrongAnswerDetailPage1State extends State<WrongAnswerDetailPageEighteen> 
         appBar: AppBar(
           title: const Text(
             'Алдсан асуулт',
-            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 15),
+            style: TextStyle(color: Colors.black, fontSize: 15),
           ),
           backgroundColor: Colors.blue[100],
           iconTheme: const IconThemeData(color: Colors.black),

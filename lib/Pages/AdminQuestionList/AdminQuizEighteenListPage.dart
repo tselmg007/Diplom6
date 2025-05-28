@@ -67,7 +67,7 @@ class _AdminQuizListOnePagesState extends State<AdminQuizEighteenListPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Асуултуудын жагсаалт", style: TextStyle(color: Colors.black)),
+        title: Text("Асуултуудын жагсаалт", style: TextStyle(color: Colors.black, fontSize: 15)),
         backgroundColor: Colors.blue[100],
         elevation: 0,
         iconTheme: IconThemeData(color: Colors.black),
@@ -122,7 +122,7 @@ class _AdminQuizListOnePagesState extends State<AdminQuizEighteenListPage> {
                             questionText,
                             style: TextStyle(
                               fontWeight: FontWeight.w600,
-                              fontSize: 16,
+                              fontSize: 13,
                             ),
                           ),
                           trailing: IconButton(
